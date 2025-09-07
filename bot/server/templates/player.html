@@ -16,6 +16,7 @@
       html, body {
         margin: 0;
         height: 100%;
+        background-color: black;
       }
 
       #stream-media {
@@ -43,6 +44,11 @@
         color: white;
         z-index: 10;
         cursor: pointer;
+        font-family: "Font Awesome 5 Free";
+        font-weight: bold;
+      }
+      .mejs__container .mejs-download-button:before {
+        content: "\f019";
       }
 
       .mejs__container .mejs-share-button {
@@ -58,6 +64,11 @@
         color: white;
         z-index: 10;
         cursor: pointer;
+        font-family: "Font Awesome 5 Free";
+        font-weight: bold;
+      }
+      .mejs__container .mejs-share-button:before {
+        content: "\f064";
       }
 
       .mejs__container .mejs-download-button:hover,
@@ -66,16 +77,15 @@
         color: black;
       }
 
-      .mejs__container .mejs-download-button:before {
-        font-family: "Font Awesome 5 Free";
-        content: "\f019";
-        font-weight: bold;
-      }
-
-      .mejs__container .mejs-share-button:before {
-        font-family: "Font Awesome 5 Free";
-        content: "\f064";
-        font-weight: bold;
+      /* Watermark */
+      .mejs-watermark {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 80px;
+        opacity: 0.6;
+        z-index: 20;
+        pointer-events: none;
       }
 
       .mejs__container, .mejs__mediaelement, .mejs__iframe {
@@ -98,7 +108,6 @@
       var mediaLink = "{{ mediaLink }}";
 
       if (mediaLink) {
-
         var player = new MediaElementPlayer('stream-media', {
           features: ['playpause','current','progress','duration','volume','fullscreen'],
           success: function(mediaElement, originalNode, instance) {
@@ -133,6 +142,12 @@
               }
             };
             instance.container.appendChild(shareButton);
+
+            // Watermark
+            var watermark = document.createElement('img');
+            watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
+            watermark.className = 'mejs-watermark';
+            instance.container.appendChild(watermark);
           }
         });
 
