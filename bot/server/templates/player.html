@@ -13,29 +13,32 @@
   <style>
     html, body { margin:0; height:100%; background:black; }
     #stream-media { width:100%; height:100%; }
+
     #error-message { color:red; font-size:24px; text-align:center; margin-top:20px; }
 
-    /* Custom buttons */
+    /* Custom Buttons */
     .custom-button {
       position: absolute;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       text-align: center;
-      line-height: 36px;
+      line-height: 40px;
       color: white;
       background-color: rgba(0,0,0,0.7);
-      z-index: 10;
+      z-index: 1000;
       cursor: pointer;
       font-family: "Font Awesome 5 Free";
       font-weight: 900;
+      font-size: 18px;
       transition: 0.3s;
     }
-    .custom-button:hover { background-color: rgba(255,255,255,0.7); color: black; }
+    .custom-button:hover { background-color: rgba(255,255,255,0.7); color:black; }
 
-    .mejs-download-button { top:10px; left:10px; }
+    .mejs-download-button { top: 10px; left: 10px; }
     .mejs-download-button:before { content: "\f019"; } /* fa-download */
-    .mejs-share-button { top:60px; left:10px; }
+
+    .mejs-share-button { top: 60px; left: 10px; }
     .mejs-share-button:before { content: "\f064"; } /* fa-share */
 
     /* Watermark */
@@ -45,80 +48,76 @@
       right: 10px;
       width: 80px;
       opacity: 0.6;
-      z-index: 20;
+      z-index: 1000;
       pointer-events: none;
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
+    /* Responsive */
+    @media(max-width:768px){
       .mejs-watermark { width: 60px; }
-      .custom-button { width: 30px; height: 30px; line-height: 30px; font-size: 14px; }
+      .custom-button { width: 30px; height: 30px; line-height:30px; font-size:14px; }
     }
-
-    @media (min-width: 1200px) {
+    @media(min-width:1200px){
       .mejs-watermark { width: 100px; }
-      .custom-button { width: 40px; height: 40px; line-height: 40px; font-size: 18px; }
+      .custom-button { width: 45px; height: 45px; line-height:45px; font-size:20px; }
     }
-
-    .mejs__container, .mejs__mediaelement { height: 100%; }
   </style>
 </head>
-
 <body>
-  <video id="stream-media" controls preload="auto">
-    <source src="" type="">
-    <p>To view this video please enable JavaScript and HTML5 video support</p>
-  </video>
 
-  <div id="error-message"></div>
+<video id="stream-media" controls preload="auto">
+  <source src="" type="">
+  <p>To view this video, enable JavaScript and HTML5 video support.</p>
+</video>
 
-  <script>
-    var mediaLink = "{{ mediaLink }}";
+<div id="error-message"></div>
 
-    if(mediaLink){
-      var player = new MediaElementPlayer('stream-media', {
-        features: ['playpause','current','progress','duration','volume','fullscreen'],
-        success: function(mediaElement, originalNode, instance){
+<script>
+var mediaLink = "{{ mediaLink }}"; // replace with your media URL
 
-          mediaElement.setSrc(mediaLink);
-          mediaElement.load();
+if(mediaLink){
+  var player = new MediaElementPlayer('stream-media', {
+    features: ['playpause','current','progress','duration','volume','fullscreen'],
+    success: function(mediaElement, originalNode, instance){
+      mediaElement.setSrc(mediaLink);
+      mediaElement.load();
 
-          // Download button
-          var downloadButton = document.createElement('div');
-          downloadButton.className = 'custom-button mejs-download-button';
-          downloadButton.onclick = function(e){
-            e.stopPropagation();
-            var a = document.createElement('a');
-            a.href = mediaLink;
-            a.download = '';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          };
-          instance.container.appendChild(downloadButton);
+      // Download button
+      var downloadBtn = document.createElement('div');
+      downloadBtn.className = 'custom-button mejs-download-button';
+      downloadBtn.onclick = function(e){
+        e.stopPropagation();
+        var a = document.createElement('a');
+        a.href = mediaLink;
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+      instance.container.appendChild(downloadBtn);
 
-          // Share button
-          var shareButton = document.createElement('div');
-          shareButton.className = 'custom-button mejs-share-button';
-          shareButton.onclick = function(e){
-            e.stopPropagation();
-            if(navigator.share){
-              navigator.share({ title:"Play", url: mediaLink });
-            }
-          };
-          instance.container.appendChild(shareButton);
-
-          // Watermark
-          var watermark = document.createElement('img');
-          watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
-          watermark.className = 'mejs-watermark';
-          instance.container.appendChild(watermark);
-
+      // Share button
+      var shareBtn = document.createElement('div');
+      shareBtn.className = 'custom-button mejs-share-button';
+      shareBtn.onclick = function(e){
+        e.stopPropagation();
+        if(navigator.share){
+          navigator.share({ title:"Play", url: mediaLink });
         }
-      });
-    }else{
-      document.getElementById('error-message').textContent = 'Error: Media URL not provided';
+      };
+      instance.container.appendChild(shareBtn);
+
+      // Watermark
+      var watermark = document.createElement('img');
+      watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
+      watermark.className = 'mejs-watermark';
+      instance.container.appendChild(watermark);
     }
-  </script>
+  });
+}else{
+  document.getElementById('error-message').textContent = 'Error: Media URL not provided';
+}
+</script>
+
 </body>
 </html>
