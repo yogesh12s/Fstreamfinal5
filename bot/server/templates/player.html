@@ -1,260 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Play Files</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Play Files</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- MediaElement and Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelementplayer.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelement-and-player.min.js"></script>
+<style>
+  html, body { margin:0; height:100%; background:black; }
+  #stream-media { width:100%; height:100%; background:black; display:block; }
 
-  <style>
-    html, body { margin:0; height:100%; background:black; }
-    #stream-media { width:100%; height:100%; background:black; }
+  #error-message { color:red; font-size:24px; text-align:center; margin-top:20px; }
 
-    #error-message { color:red; font-size:24px; text-align:center; margin-top:20px; }
+  /* Watermark */
+  .mejs-watermark {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 80px;
+    opacity: 0.6;
+    z-index: 1000;
+    pointer-events: none;
+  }
 
-    /* Custom Buttons */
-    .custom-button {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 40px;
-      color: white;
-      background-color: rgba(0,0,0,0.7);
-      z-index: 1000;
-      cursor: pointer;
-      font-family: "Font Awesome 5 Free";
-      font-weight: 900;
-      font-size: 18px;
-      transition: 0.3s;
-    }
-    .custom-button:hover { background-color: rgba(255,255,255,0.7); color:black; }
+  /* Bottom Control Bar */
+  #control-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    z-index: 1000;
+    flex-wrap: wrap;
+  }
 
-    /* Watermark */
-    .mejs-watermark {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 80px;
-      opacity: 0.6;
-      z-index: 1000;
-      pointer-events: none;
-    }
+  #control-bar i {
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
 
-    /* Bottom Control Bar */
-    #control-bar {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      background: rgba(0,0,0,0.5);
-      border-radius: 8px;
-      padding: 5px 10px;
-      z-index: 1000;
-    }
-    #control-bar i {
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      margin: 0 5px;
-    }
-    #progress-container {
-      flex: 1;
-      height: 5px;
-      background: rgba(255,255,255,0.3);
-      border-radius: 3px;
-      margin: 0 10px;
-      cursor: pointer;
-      position: relative;
-    }
-    #progress {
-      height: 5px;
-      background: #ff0000;
-      width: 0%;
-      border-radius: 3px;
-    }
-    #time-display {
-      color:white;
-      font-size:14px;
-      margin-left:5px;
-    }
+  #progress-container {
+    flex: 1;
+    height: 5px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    cursor: pointer;
+    margin: 0 10px;
+    position: relative;
+  }
 
-    /* Responsive */
-    @media(max-width:768px){
-      .mejs-watermark { width: 60px; }
-      .custom-button { width: 30px; height: 30px; line-height:30px; font-size:14px; }
-      #control-bar i { font-size:16px; }
-    }
-    @media(min-width:1200px){
-      .mejs-watermark { width: 100px; }
-      .custom-button { width: 45px; height: 45px; line-height:45px; font-size:20px; }
-      #control-bar i { font-size:22px; }
-    }
-  </style>
+  #progress {
+    height: 5px;
+    background: #ff0000;
+    width: 0%;
+    border-radius: 3px;
+  }
+
+  #time-display {
+    color:white;
+    font-size:14px;
+    white-space: nowrap;
+  }
+
+  /* Top Custom Buttons */
+  .custom-button {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 40px;
+    color: white;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 1000;
+    cursor: pointer;
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 18px;
+    transition: 0.3s;
+  }
+  .custom-button:hover { background-color: rgba(255,255,255,0.7); color:black; }
+
+  /* Responsive */
+  @media(max-width:768px){
+    .mejs-watermark { width: 60px; }
+    .custom-button { width: 30px; height: 30px; line-height:30px; font-size:14px; }
+    #control-bar i { font-size:16px; margin-right:5px; }
+  }
+  @media(min-width:1200px){
+    .mejs-watermark { width: 100px; }
+    .custom-button { width: 45px; height: 45px; line-height:45px; font-size:20px; }
+    #control-bar i { font-size:22px; margin-right:10px; }
+  }
+</style>
 </head>
 <body>
 
-<video id="stream-media" preload="auto">
-  <source src="" type="">
-  <p>To view this video, enable JavaScript and HTML5 video support.</p>
-</video>
-
+<video id="stream-media" preload="auto"></video>
 <div id="error-message"></div>
 
 <script>
 var mediaLink = "{{ mediaLink }}"; // replace with your media URL
 
 if(mediaLink){
-  var player = new MediaElementPlayer('stream-media', {
-    features: [], // disable default controls
-    success: function(mediaElement, originalNode, instance){
-      mediaElement.setSrc(mediaLink);
-      mediaElement.load();
+  var video = document.getElementById('stream-media');
+  video.src = mediaLink;
 
-      var container = instance.container;
+  // --- Top Buttons ---
+  function createButton(iconClass, top, left, onClick){
+    var btn = document.createElement('div');
+    btn.className = 'custom-button';
+    btn.style.top = top+'px';
+    btn.style.left = left+'px';
+    btn.innerHTML = '<i class="'+iconClass+'"></i>';
+    btn.onclick = onClick;
+    document.body.appendChild(btn);
+    return btn;
+  }
 
-      // --- Custom Buttons ---
-      function createButton(iconClass, top, left, onClick){
-        var btn = document.createElement('div');
-        btn.className = 'custom-button';
-        btn.style.top = top+'px';
-        btn.style.left = left+'px';
-        btn.innerHTML = '<i class="'+iconClass+'"></i>';
-        btn.onclick = onClick;
-        container.appendChild(btn);
-        return btn;
-      }
-
-      // Play/Pause
-      var playBtn = createButton('fas fa-play', 10, 10, function(e){
-        e.stopPropagation();
-        if(mediaElement.paused){
-          mediaElement.play();
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        } else {
-          mediaElement.pause();
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        }
-      });
-
-      // Volume
-      var volumeBtn = createButton('fas fa-volume-up', 60, 10, function(e){
-        e.stopPropagation();
-        if(mediaElement.muted){
-          mediaElement.muted = false;
-          volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-        } else {
-          mediaElement.muted = true;
-          volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-        }
-      });
-
-      // Fullscreen
-      var fullscreenBtn = createButton('fas fa-expand', 110, 10, function(e){
-        e.stopPropagation();
-        if(!document.fullscreenElement){
-          container.requestFullscreen();
-          fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
-        } else {
-          document.exitFullscreen();
-          fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
-        }
-      });
-
-      // Download
-      createButton('fas fa-download', 160, 10, function(e){
-        e.stopPropagation();
-        var a = document.createElement('a');
-        a.href = mediaLink;
-        a.download = '';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
-
-      // Share
-      createButton('fas fa-share', 210, 10, function(e){
-        e.stopPropagation();
-        if(navigator.share){
-          navigator.share({ title:"Play", url: mediaLink });
-        }
-      });
-
-      // --- Watermark ---
-      var watermark = document.createElement('img');
-      watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
-      watermark.className = 'mejs-watermark';
-      container.appendChild(watermark);
-
-      // --- Bottom Control Bar ---
-      var controlBar = document.createElement('div');
-      controlBar.id = 'control-bar';
-      container.appendChild(controlBar);
-
-      // Play/Pause on bottom
-      var bottomPlay = document.createElement('i');
-      bottomPlay.className = 'fas fa-play';
-      controlBar.appendChild(bottomPlay);
-
-      bottomPlay.onclick = function(){
-        if(mediaElement.paused){
-          mediaElement.play();
-          bottomPlay.className = 'fas fa-pause';
-          playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        } else {
-          mediaElement.pause();
-          bottomPlay.className = 'fas fa-play';
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        }
-      };
-
-      // Progress bar
-      var progressContainer = document.createElement('div');
-      progressContainer.id = 'progress-container';
-      var progress = document.createElement('div');
-      progress.id = 'progress';
-      progressContainer.appendChild(progress);
-      controlBar.appendChild(progressContainer);
-
-      progressContainer.onclick = function(e){
-        var rect = progressContainer.getBoundingClientRect();
-        var pos = (e.clientX - rect.left) / rect.width;
-        mediaElement.currentTime = pos * mediaElement.duration;
-      };
-
-      // Time display
-      var timeDisplay = document.createElement('span');
-      timeDisplay.id = 'time-display';
-      timeDisplay.textContent = '00:00 / 00:00';
-      controlBar.appendChild(timeDisplay);
-
-      // Update progress and time
-      mediaElement.addEventListener('timeupdate', function(){
-        var percent = (mediaElement.currentTime / mediaElement.duration) * 100;
-        progress.style.width = percent + '%';
-
-        function formatTime(t){
-          var m = Math.floor(t/60).toString().padStart(2,'0');
-          var s = Math.floor(t%60).toString().padStart(2,'0');
-          return m+':'+s;
-        }
-
-        timeDisplay.textContent = formatTime(mediaElement.currentTime) + ' / ' + formatTime(mediaElement.duration);
-      });
-    }
+  // Play/Pause top
+  var playBtn = createButton('fas fa-play', 10, 10, function(){
+    if(video.paused){ video.play(); playBtn.innerHTML='<i class="fas fa-pause"></i>'; bottomPlay.className='fas fa-pause'; }
+    else { video.pause(); playBtn.innerHTML='<i class="fas fa-play"></i>'; bottomPlay.className='fas fa-play'; }
   });
+
+  // Volume top
+  var volumeBtn = createButton('fas fa-volume-up', 60, 10, function(){
+    if(video.muted){ video.muted=false; volumeBtn.innerHTML='<i class="fas fa-volume-up"></i>'; }
+    else { video.muted=true; volumeBtn.innerHTML='<i class="fas fa-volume-mute"></i>'; }
+  });
+
+  // Fullscreen top
+  var fullscreenBtn = createButton('fas fa-expand', 110, 10, function(){
+    if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-compress"></i>'; }
+    else { document.exitFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-expand"></i>'; }
+  });
+
+  // Download top
+  createButton('fas fa-download', 160, 10, function(){
+    var a = document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+
+  // Share top
+  createButton('fas fa-share', 210, 10, function(){
+    if(navigator.share){ navigator.share({ title:"Play", url: mediaLink }); }
+  });
+
+  // Watermark
+  var watermark = document.createElement('img');
+  watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
+  watermark.className = 'mejs-watermark';
+  document.body.appendChild(watermark);
+
+  // --- Bottom Control Bar ---
+  var controlBar = document.createElement('div');
+  controlBar.id = 'control-bar';
+  document.body.appendChild(controlBar);
+
+  // Play/Pause bottom
+  var bottomPlay = document.createElement('i'); bottomPlay.className='fas fa-play'; controlBar.appendChild(bottomPlay);
+  bottomPlay.onclick = function(){
+    if(video.paused){ video.play(); bottomPlay.className='fas fa-pause'; playBtn.innerHTML='<i class="fas fa-pause"></i>'; }
+    else { video.pause(); bottomPlay.className='fas fa-play'; playBtn.innerHTML='<i class="fas fa-play"></i>'; }
+  };
+
+  // Progress bar
+  var progressContainer = document.createElement('div'); progressContainer.id='progress-container';
+  var progress = document.createElement('div'); progress.id='progress'; progressContainer.appendChild(progress);
+  controlBar.appendChild(progressContainer);
+
+  // Drag/Seek functionality
+  function updateProgress(e){
+    var rect = progressContainer.getBoundingClientRect();
+    var pos = Math.min(Math.max(0, e.clientX - rect.left), rect.width) / rect.width;
+    video.currentTime = pos * video.duration;
+  }
+
+  progressContainer.addEventListener('click', updateProgress);
+  progressContainer.addEventListener('mousedown', function(){
+    function moveHandler(e){ updateProgress(e); }
+    function upHandler(){ document.removeEventListener('mousemove', moveHandler); document.removeEventListener('mouseup', upHandler); }
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', upHandler);
+  });
+
+  // Time display
+  var timeDisplay = document.createElement('span'); timeDisplay.id='time-display'; timeDisplay.textContent='00:00 / 00:00';
+  controlBar.appendChild(timeDisplay);
+
+  // Update progress and time
+  video.addEventListener('timeupdate', function(){
+    var percent = (video.currentTime / video.duration) * 100;
+    progress.style.width = percent + '%';
+    function formatTime(t){ var m=Math.floor(t/60).toString().padStart(2,'0'); var s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; }
+    timeDisplay.textContent = formatTime(video.currentTime)+' / '+formatTime(video.duration);
+  });
+
 }else{
   document.getElementById('error-message').textContent = 'Error: Media URL not provided';
 }
 </script>
-
 </body>
 </html>
