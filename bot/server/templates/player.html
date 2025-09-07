@@ -7,10 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-Frame-Options" content="deny">
 
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelementplayer.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelement-and-player.min.js"></script>
 
     <style>
       html, body {
@@ -30,64 +30,57 @@
         margin-top: 20px;
       }
 
-      .plyr__video-wrapper .plyr-download-button{
+      .mejs__container .mejs-download-button {
         position: absolute;
         top: 10px;
         left: 10px;
         width: 30px;
         height: 30px;
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: rgba(0,0,0,0.7);
         border-radius: 50%;
         text-align: center;
         line-height: 30px;
         color: white;
         z-index: 10;
+        cursor: pointer;
       }
 
-      .plyr__volume {
-        max-width: initial;
-        min-width: initial;
-        width: auto;
-        position: relative;
-      }
-
-
-      .plyr__video-wrapper .plyr-share-button{
+      .mejs__container .mejs-share-button {
         position: absolute;
         top: 50px;
         left: 10px;
         width: 30px;
         height: 30px;
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: rgba(0,0,0,0.7);
         border-radius: 50%;
         text-align: center;
         line-height: 30px;
         color: white;
         z-index: 10;
+        cursor: pointer;
       }
 
-      .plyr__video-wrapper .plyr-download-button:hover,
-      .plyr__video-wrapper .plyr-share-button:hover{
-        background-color: rgba(255, 255, 255, 0.7);
+      .mejs__container .mejs-download-button:hover,
+      .mejs__container .mejs-share-button:hover {
+        background-color: rgba(255,255,255,0.7);
         color: black;
       }
 
-      .plyr__video-wrapper .plyr-download-button:before {
+      .mejs__container .mejs-download-button:before {
         font-family: "Font Awesome 5 Free";
         content: "\f019";
         font-weight: bold;
       }
 
-      .plyr__video-wrapper .plyr-share-button:before {
+      .mejs__container .mejs-share-button:before {
         font-family: "Font Awesome 5 Free";
         content: "\f064";
         font-weight: bold;
       }
 
-      .plyr, .plyr__video-wrapper, .plyr__video-embed iframe {
+      .mejs__container, .mejs__mediaelement, .mejs__iframe {
         height: 100%;
       }
-
     </style>
   </head>
 
@@ -102,53 +95,50 @@
     <div id="error-message"></div>
 
     <script>
-      var player = new Plyr('#stream-media', {
-          controls:['play-large', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'mute', 'settings', 'pip', 'fullscreen'],
-          settings:['speed','loop'],
-          speed:{selected:1,options:[0.25,0.5,0.75,1,1.25,1.5,1.75,2]},
-          seek: 10,
-          keyboard: { focused: true, global: true },
-      });
-
       var mediaLink = "{{ mediaLink }}";
 
       if (mediaLink) {
-          document.querySelector('#stream-media source').setAttribute('src', mediaLink);
-          player.restart();
 
-          var downloadButton = document.createElement('div');
-          downloadButton.className = 'plyr-download-button';
+        var player = new MediaElementPlayer('stream-media', {
+          features: ['playpause','current','progress','duration','volume','fullscreen'],
+          success: function(mediaElement, originalNode, instance) {
 
-          downloadButton.onclick = function() {
-            event.stopPropagation();
-            var link = document.createElement('a');
-            link.href = mediaLink;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          };
+            // Set media source
+            mediaElement.setSrc(mediaLink);
+            mediaElement.load();
 
-          player.elements.container.querySelector('.plyr__video-wrapper').appendChild(downloadButton);
+            // Download button
+            var downloadButton = document.createElement('div');
+            downloadButton.className = 'mejs-download-button';
+            downloadButton.onclick = function(event) {
+              event.stopPropagation();
+              var link = document.createElement('a');
+              link.href = mediaLink;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            };
+            instance.container.appendChild(downloadButton);
 
-          var shareButton = document.createElement('div');
-          shareButton.className = 'plyr-share-button';
-
-          shareButton.onclick = function() {
-            event.stopPropagation();
-            if (navigator.share) {
-              navigator.share({
-                title: "Play",
-                url: mediaLink
-              });
-            }
-          };
-
-          player.elements.container.querySelector('.plyr__video-wrapper').appendChild(shareButton);
+            // Share button
+            var shareButton = document.createElement('div');
+            shareButton.className = 'mejs-share-button';
+            shareButton.onclick = function(event) {
+              event.stopPropagation();
+              if (navigator.share) {
+                navigator.share({
+                  title: "Play",
+                  url: mediaLink
+                });
+              }
+            };
+            instance.container.appendChild(shareButton);
+          }
+        });
 
       } else {
-          document.getElementById('error-message').textContent = 'Error: Media URL not provided';
+        document.getElementById('error-message').textContent = 'Error: Media URL not provided';
       }
     </script>
-
   </body>
 </html>
