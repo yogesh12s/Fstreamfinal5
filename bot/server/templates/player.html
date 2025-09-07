@@ -1,37 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Play Files</title>
   <meta charset="UTF-8">
+  <title>Play Files</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-Frame-Options" content="deny">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelementplayer.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelementplayer.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mediaelement/5.0.5/mediaelement-and-player.min.js"></script>
 
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      background-color: black;
-    }
-
-    #stream-media {
-      width: 100%;
-      height: 100%;
-    }
-
-    #error-message {
-      color: red;
-      font-size: 24px;
-      text-align: center;
-      margin-top: 20px;
-    }
+    html, body { margin:0; height:100%; background:black; }
+    #stream-media { width:100%; height:100%; }
+    #error-message { color:red; font-size:24px; text-align:center; margin-top:20px; }
 
     /* Custom buttons */
-    .mejs__container .custom-button {
+    .custom-button {
       position: absolute;
       width: 36px;
       height: 36px;
@@ -43,25 +28,14 @@
       z-index: 10;
       cursor: pointer;
       font-family: "Font Awesome 5 Free";
-      font-weight: bold;
+      font-weight: 900;
       transition: 0.3s;
     }
+    .custom-button:hover { background-color: rgba(255,255,255,0.7); color: black; }
 
-    .custom-button:hover {
-      background-color: rgba(255,255,255,0.7);
-      color: black;
-    }
-
-    .mejs-download-button {
-      top: 10px;
-      left: 10px;
-    }
+    .mejs-download-button { top:10px; left:10px; }
     .mejs-download-button:before { content: "\f019"; } /* fa-download */
-
-    .mejs-share-button {
-      top: 60px;
-      left: 10px;
-    }
+    .mejs-share-button { top:60px; left:10px; }
     .mejs-share-button:before { content: "\f064"; } /* fa-share */
 
     /* Watermark */
@@ -86,18 +60,14 @@
       .custom-button { width: 40px; height: 40px; line-height: 40px; font-size: 18px; }
     }
 
-    .mejs__container, .mejs__mediaelement, .mejs__iframe {
-      height: 100%;
-    }
+    .mejs__container, .mejs__mediaelement { height: 100%; }
   </style>
 </head>
 
 <body>
   <video id="stream-media" controls preload="auto">
     <source src="" type="">
-    <p class="vjs-no-js">
-      To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video
-    </p>
+    <p>To view this video please enable JavaScript and HTML5 video support</p>
   </video>
 
   <div id="error-message"></div>
@@ -105,10 +75,10 @@
   <script>
     var mediaLink = "{{ mediaLink }}";
 
-    if (mediaLink) {
+    if(mediaLink){
       var player = new MediaElementPlayer('stream-media', {
         features: ['playpause','current','progress','duration','volume','fullscreen'],
-        success: function(mediaElement, originalNode, instance) {
+        success: function(mediaElement, originalNode, instance){
 
           mediaElement.setSrc(mediaLink);
           mediaElement.load();
@@ -116,26 +86,24 @@
           // Download button
           var downloadButton = document.createElement('div');
           downloadButton.className = 'custom-button mejs-download-button';
-          downloadButton.onclick = function(event) {
-            event.stopPropagation();
-            var link = document.createElement('a');
-            link.href = mediaLink;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+          downloadButton.onclick = function(e){
+            e.stopPropagation();
+            var a = document.createElement('a');
+            a.href = mediaLink;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           };
           instance.container.appendChild(downloadButton);
 
           // Share button
           var shareButton = document.createElement('div');
           shareButton.className = 'custom-button mejs-share-button';
-          shareButton.onclick = function(event) {
-            event.stopPropagation();
-            if (navigator.share) {
-              navigator.share({
-                title: "Play",
-                url: mediaLink
-              });
+          shareButton.onclick = function(e){
+            e.stopPropagation();
+            if(navigator.share){
+              navigator.share({ title:"Play", url: mediaLink });
             }
           };
           instance.container.appendChild(shareButton);
@@ -145,10 +113,10 @@
           watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
           watermark.className = 'mejs-watermark';
           instance.container.appendChild(watermark);
+
         }
       });
-
-    } else {
+    }else{
       document.getElementById('error-message').textContent = 'Error: Media URL not provided';
     }
   </script>
