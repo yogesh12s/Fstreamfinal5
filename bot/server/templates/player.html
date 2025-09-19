@@ -107,6 +107,23 @@
     filter: grayscale(100%) contrast(200%);
     opacity: 0;
     animation: sketch 4s forwards ease-in-out;
+    margin-top: 24px;
+  }
+
+  /* Spinner Loader */
+  #spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #fff;
+    border-top: 5px solid #ff0000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
   }
 
   @keyframes sketch {
@@ -167,6 +184,7 @@
 
 <!-- Preloader with sketch logo -->
 <div id="preloader">
+  <div id="spinner"></div>
   <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo">
 </div>
 
@@ -303,3 +321,4 @@ if(mediaLink){
 </script>
 </body>
 </html>
+
