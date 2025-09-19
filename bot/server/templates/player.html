@@ -87,6 +87,28 @@
   }
   .custom-button:hover { background-color: rgba(255,255,255,0.7); color:black; }
 
+  /* Preloader */
+  #preloader {
+    position: fixed;
+    inset: 0;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+  .loader {
+    width: 60px;
+    height: 60px;
+    border: 6px solid rgba(255,255,255,0.3);
+    border-top: 6px solid #ff0000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   /* Responsive */
   @media(max-width:768px){
     .mejs-watermark { width: 60px; }
@@ -102,6 +124,11 @@
 </head>
 <body>
 
+<!-- Preloader -->
+<div id="preloader">
+  <div class="loader"></div>
+</div>
+
 <video id="stream-media" preload="auto"></video>
 <div id="error-message"></div>
 
@@ -111,6 +138,15 @@ var mediaLink = "{{ mediaLink }}"; // replace with your media URL
 if(mediaLink){
   var video = document.getElementById('stream-media');
   video.src = mediaLink;
+
+  // Show preloader until video is ready
+  var preloader = document.getElementById("preloader");
+  video.addEventListener("canplaythrough", function() {
+    preloader.style.display = "none";
+    video.play(); // auto play after preloader
+    bottomPlay.className='fas fa-pause';
+    playBtn.innerHTML='<i class="fas fa-pause"></i>';
+  });
 
   // --- Top Buttons ---
   function createButton(iconClass, top, left, onClick){
