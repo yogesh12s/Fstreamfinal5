@@ -123,7 +123,7 @@
   }
   @keyframes spin {
     0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
+    100% { transform: rotate(360deg); }
   }
 
   @keyframes sketch {
@@ -201,119 +201,133 @@
 var mediaLink = "{{ mediaLink }}"; // replace with your media URL
 
 if(mediaLink){
-  var video = document.getElementById('stream-media');
-  video.src = mediaLink;
-  var preloader = document.getElementById("preloader");
-  var bigPlay = document.getElementById("big-play");
-  var toast = document.getElementById("toast");
 
-  // Preloader fade out
-  video.addEventListener("canplaythrough", function() {
-    setTimeout(()=>preloader.classList.add("fade-out"), 500);
-  });
+  // Ask user: Play or Download
+  setTimeout(()=> {
+    let choice = confirm("Do you want to PLAY the video?\nClick Cancel to DOWNLOAD.");
+    if(choice){
+      initPlayer(); // user chose to play
+    } else {
+      // Trigger download
+      var a = document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+  }, 100);
 
-  // Big play overlay
-  bigPlay.onclick = function(){
-    video.play();
-    bigPlay.style.display="none";
-    bottomPlay.className='fas fa-pause';
-    playBtn.innerHTML='<i class="fas fa-pause"></i>';
-  };
+  function initPlayer(){
+    var video = document.getElementById('stream-media');
+    video.src = mediaLink;
+    var preloader = document.getElementById("preloader");
+    var bigPlay = document.getElementById("big-play");
+    var toast = document.getElementById("toast");
 
-  video.addEventListener("play", ()=>bigPlay.style.display="none");
+    // Preloader fade out
+    video.addEventListener("canplaythrough", function() {
+      setTimeout(()=>preloader.classList.add("fade-out"), 500);
+    });
 
-  // Toast every 20 sec
-  setInterval(function(){
-    toast.classList.add("show");
-    setTimeout(()=>toast.classList.remove("show"), 4000);
-  }, 20000);
+    // Big play overlay
+    bigPlay.onclick = function(){
+      video.play();
+      bigPlay.style.display="none";
+      bottomPlay.className='fas fa-pause';
+      playBtn.innerHTML='<i class="fas fa-pause"></i>';
+    };
+    video.addEventListener("play", ()=>bigPlay.style.display="none");
 
-  // --- Top Buttons ---
-  function createButton(iconClass, top, left, onClick){
-    var btn = document.createElement('div');
-    btn.className = 'custom-button';
-    btn.style.top = top+'px';
-    btn.style.left = left+'px';
-    btn.innerHTML = '<i class="'+iconClass+'"></i>';
-    btn.onclick = onClick;
-    document.body.appendChild(btn);
-    return btn;
+    // Toast every 20 sec
+    setInterval(function(){
+      toast.classList.add("show");
+      setTimeout(()=>toast.classList.remove("show"), 4000);
+    }, 20000);
+
+    // --- Top Buttons ---
+    function createButton(iconClass, top, left, onClick){
+      var btn = document.createElement('div');
+      btn.className = 'custom-button';
+      btn.style.top = top+'px';
+      btn.style.left = left+'px';
+      btn.innerHTML = '<i class="'+iconClass+'"></i>';
+      btn.onclick = onClick;
+      document.body.appendChild(btn);
+      return btn;
+    }
+
+    // Play/Pause top
+    var playBtn = createButton('fas fa-play', 10, 10, function(){
+      if(video.paused){ video.play(); playBtn.innerHTML='<i class="fas fa-pause"></i>'; bottomPlay.className='fas fa-pause'; }
+      else { video.pause(); playBtn.innerHTML='<i class="fas fa-play"></i>'; bottomPlay.className='fas fa-play'; }
+    });
+
+    // Volume top
+    var volumeBtn = createButton('fas fa-volume-up', 60, 10, function(){
+      if(video.muted){ video.muted=false; volumeBtn.innerHTML='<i class="fas fa-volume-up"></i>'; }
+      else { video.muted=true; volumeBtn.innerHTML='<i class="fas fa-volume-mute"></i>'; }
+    });
+
+    // Fullscreen top
+    var fullscreenBtn = createButton('fas fa-expand', 110, 10, function(){
+      if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-compress"></i>'; }
+      else { document.exitFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-expand"></i>'; }
+    });
+
+    // Download top
+    createButton('fas fa-download', 160, 10, function(){
+      var a = document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    });
+
+    // Share top
+    createButton('fas fa-share', 210, 10, function(){
+      if(navigator.share){ navigator.share({ title:"Play", url: mediaLink }); }
+    });
+
+    // Watermark
+    var watermark = document.createElement('img');
+    watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
+    watermark.className = 'mejs-watermark';
+    document.body.appendChild(watermark);
+
+    // --- Bottom Control Bar ---
+    var controlBar = document.createElement('div');
+    controlBar.id = 'control-bar';
+    document.body.appendChild(controlBar);
+
+    // Play/Pause bottom
+    var bottomPlay = document.createElement('i'); bottomPlay.className='fas fa-play'; controlBar.appendChild(bottomPlay);
+    bottomPlay.onclick = function(){
+      if(video.paused){ video.play(); bottomPlay.className='fas fa-pause'; playBtn.innerHTML='<i class="fas fa-pause"></i>'; }
+      else { video.pause(); bottomPlay.className='fas fa-play'; playBtn.innerHTML='<i class="fas fa-play"></i>'; }
+    };
+
+    // Progress bar
+    var progressContainer = document.createElement('div'); progressContainer.id='progress-container';
+    var progress = document.createElement('div'); progress.id='progress'; progressContainer.appendChild(progress);
+    controlBar.appendChild(progressContainer);
+
+    let isDragging = false;
+    function updateProgress(e){
+      var rect = progressContainer.getBoundingClientRect();
+      var clientX = e.clientX ?? (e.touches ? e.touches[0].clientX : 0);
+      var pos = Math.min(Math.max(0, clientX - rect.left), rect.width) / rect.width;
+      video.currentTime = pos * video.duration;
+    }
+
+    progressContainer.addEventListener('pointerdown', (e) => { isDragging = true; updateProgress(e); video.pause(); progressContainer.setPointerCapture(e.pointerId); });
+    progressContainer.addEventListener('pointermove', (e) => { if(isDragging) updateProgress(e); });
+    progressContainer.addEventListener('pointerup', (e) => { if(isDragging){ updateProgress(e); isDragging=false; video.play(); } });
+
+    // Time display
+    var timeDisplay = document.createElement('span'); timeDisplay.id='time-display'; timeDisplay.textContent='00:00 / 00:00';
+    controlBar.appendChild(timeDisplay);
+
+    video.addEventListener('timeupdate', function(){
+      if(!isDragging){
+        var percent = (video.currentTime / video.duration) * 100;
+        progress.style.width = percent + '%';
+      }
+      function formatTime(t){ var m=Math.floor(t/60).toString().padStart(2,'0'); var s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; }
+      timeDisplay.textContent = formatTime(video.currentTime)+' / '+formatTime(video.duration);
+    });
   }
-
-  // Play/Pause top
-  var playBtn = createButton('fas fa-play', 10, 10, function(){
-    if(video.paused){ video.play(); playBtn.innerHTML='<i class="fas fa-pause"></i>'; bottomPlay.className='fas fa-pause'; }
-    else { video.pause(); playBtn.innerHTML='<i class="fas fa-play"></i>'; bottomPlay.className='fas fa-play'; }
-  });
-
-  // Volume top
-  var volumeBtn = createButton('fas fa-volume-up', 60, 10, function(){
-    if(video.muted){ video.muted=false; volumeBtn.innerHTML='<i class="fas fa-volume-up"></i>'; }
-    else { video.muted=true; volumeBtn.innerHTML='<i class="fas fa-volume-mute"></i>'; }
-  });
-
-  // Fullscreen top
-  var fullscreenBtn = createButton('fas fa-expand', 110, 10, function(){
-    if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-compress"></i>'; }
-    else { document.exitFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-expand"></i>'; }
-  });
-
-  // Download top
-  createButton('fas fa-download', 160, 10, function(){
-    var a = document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  });
-
-  // Share top
-  createButton('fas fa-share', 210, 10, function(){
-    if(navigator.share){ navigator.share({ title:"Play", url: mediaLink }); }
-  });
-
-  // Watermark
-  var watermark = document.createElement('img');
-  watermark.src = 'https://chadstreamz.sbs/assets/images/log2.png';
-  watermark.className = 'mejs-watermark';
-  document.body.appendChild(watermark);
-
-  // --- Bottom Control Bar ---
-  var controlBar = document.createElement('div');
-  controlBar.id = 'control-bar';
-  document.body.appendChild(controlBar);
-
-  // Play/Pause bottom
-  var bottomPlay = document.createElement('i'); bottomPlay.className='fas fa-play'; controlBar.appendChild(bottomPlay);
-  bottomPlay.onclick = function(){
-    if(video.paused){ video.play(); bottomPlay.className='fas fa-pause'; playBtn.innerHTML='<i class="fas fa-pause"></i>'; }
-    else { video.pause(); bottomPlay.className='fas fa-play'; playBtn.innerHTML='<i class="fas fa-play"></i>'; }
-  };
-
-  // Progress bar
-  var progressContainer = document.createElement('div'); progressContainer.id='progress-container';
-  var progress = document.createElement('div'); progress.id='progress'; progressContainer.appendChild(progress);
-  controlBar.appendChild(progressContainer);
-
-  function updateProgress(e){
-    var rect = progressContainer.getBoundingClientRect();
-    var pos = Math.min(Math.max(0, e.clientX - rect.left), rect.width) / rect.width;
-    video.currentTime = pos * video.duration;
-  }
-  progressContainer.addEventListener('click', updateProgress);
-  progressContainer.addEventListener('mousedown', function(){
-    function moveHandler(e){ updateProgress(e); }
-    function upHandler(){ document.removeEventListener('mousemove', moveHandler); document.removeEventListener('mouseup', upHandler); }
-    document.addEventListener('mousemove', moveHandler);
-    document.addEventListener('mouseup', upHandler);
-  });
-
-  // Time display
-  var timeDisplay = document.createElement('span'); timeDisplay.id='time-display'; timeDisplay.textContent='00:00 / 00:00';
-  controlBar.appendChild(timeDisplay);
-
-  video.addEventListener('timeupdate', function(){
-    var percent = (video.currentTime / video.duration) * 100;
-    progress.style.width = percent + '%';
-    function formatTime(t){ var m=Math.floor(t/60).toString().padStart(2,'0'); var s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; }
-    timeDisplay.textContent = formatTime(video.currentTime)+' / '+formatTime(video.duration);
-  });
 
 }else{
   document.getElementById('error-message').textContent = 'Error: Media URL not provided';
@@ -321,4 +335,3 @@ if(mediaLink){
 </script>
 </body>
 </html>
-
