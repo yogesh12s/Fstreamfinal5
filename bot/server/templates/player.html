@@ -2,157 +2,171 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Fullscreen HTML Video Player</title>
+<title>Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" 
+ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#000; font-family: Arial, sans-serif; color:#fff; }
-
-  /* Player Container */
-  .player-container { display:flex; flex-direction:column; min-height:100vh; background:black; }
-
-  /* Video Section */
-  .video-section { position:relative; width:100%; flex:1; display:flex; justify-content:center; align-items:center; background:black; }
+  body,html { margin:0; padding:0; height:100%; background:#000; font-family:Arial, sans-serif; }
+  #player-container { position:relative; width:100%; height:100%; background:#000; overflow:hidden; }
   video { width:100%; height:100%; object-fit:contain; background:black; }
 
   /* Preloader */
-  #preloader { position:fixed; inset:0; background:#000; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:9999; transition:opacity 0.5s ease; }
-  #spinner { width:50px; height:50px; border:5px solid #fff; border-top:5px solid #ff0000; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:15px; }
-  @keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg); } }
-  #preloader.fade-out{ opacity:0; pointer-events:none; }
+  #preloader {
+    position:absolute; inset:0; display:flex; justify-content:center; align-items:center;
+    background:#000; z-index:1000;
+  }
+  .spinner {
+    border:5px solid rgba(255,255,255,0.2);
+    border-top:5px solid red;
+    border-radius:50%;
+    width:60px; height:60px;
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin { 0%{transform:rotate(0);} 100%{transform:rotate(360deg);} }
 
   /* Watermark */
-  .watermark { position:absolute; top:10px; right:10px; width:80px; opacity:0.7; pointer-events:none; z-index:10; }
+  .watermark {
+    position:absolute; top:15px; right:15px;
+    width:100px; opacity:0.6; pointer-events:none;
+    z-index:20;
+  }
 
-  /* Big Play Button */
-  #big-play { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:70px; background:rgba(0,0,0,0.5); padding:20px; border-radius:50%; cursor:pointer; z-index:10; transition:0.3s; }
-  #big-play:hover{ background:rgba(255,255,255,0.7); color:black; }
+  /* Big Play */
+  #big-play {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-size:70px; color:white; background:rgba(0,0,0,0.5);
+    border-radius:50%; padding:25px; cursor:pointer; z-index:30;
+    transition:0.3s;
+  }
+  #big-play:hover { background:white; color:black; }
 
   /* Controls */
-  .controls { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; padding:10px 15px; z-index:10; flex-wrap:wrap; }
-  .control-btn{ font-size:20px; cursor:pointer; margin-right:10px; transition:0.3s; }
-  .control-btn:hover{ color:#ff0000; }
+  #controls {
+    position:absolute; bottom:0; left:0; right:0;
+    background:linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding:10px; display:flex; align-items:center; gap:12px;
+    opacity:1; transition:opacity 0.5s;
+  }
+  #controls.hidden { opacity:0; pointer-events:none; }
 
-  .progress-container { flex:1; height:5px; background:rgba(255,255,255,0.3); border-radius:2px; cursor:pointer; position:relative; margin:0 10px; }
-  .progress { width:0%; height:100%; background:#ff0000; border-radius:2px; }
+  #controls i { color:white; font-size:22px; cursor:pointer; }
+  #controls i:hover { color:red; }
 
-  .time-display{ font-size:14px; white-space:nowrap; }
+  #progress-container { flex:1; height:6px; background:rgba(255,255,255,0.3);
+    border-radius:3px; cursor:pointer; position:relative; }
+  #progress { height:6px; width:0%; background:red; border-radius:3px; }
 
-  /* Download Button */
-  .download-btn{ background:#ff0000; color:#fff; text-decoration:none; padding:8px 15px; border-radius:5px; font-weight:bold; transition:0.3s; }
-  .download-btn:hover{ background:#e60000; }
+  #time { color:white; font-size:14px; min-width:100px; text-align:right; }
 
-  /* Comments Section */
-  .comments-section{ background:#111; padding:20px; max-height:250px; overflow-y:auto; }
-  .comments-section h3{ margin-bottom:10px; }
-  .comment{ border-bottom:1px solid #222; padding:10px 0; }
-  .comment:last-child{ border-bottom:none; }
-
+  /* Responsive */
   @media(max-width:768px){
-    #big-play{ font-size:50px; padding:15px; }
-    .control-btn{ font-size:16px; }
-    .download-btn{ padding:6px 12px; font-size:14px; }
+    #big-play{font-size:50px; padding:18px;}
+    #controls i{font-size:18px;}
+    .watermark{width:70px;}
   }
 </style>
 </head>
 <body>
 
-<div id="preloader">
-  <div id="spinner"></div>
-  <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo" width="120">
-</div>
+<div id="player-container">
+  <!-- Preloader -->
+  <div id="preloader"><div class="spinner"></div></div>
 
-<div class="player-container">
-  <div class="video-section">
-    <video id="video-player" preload="metadata"></video>
-    <img src="https://chadstreamz.sbs/assets/images/log2.png" class="watermark" alt="Watermark">
+  <!-- Video -->
+  <video id="video"></video>
 
-    <div id="big-play"><i class="fas fa-play"></i></div>
+  <!-- Watermark -->
+  <img src="https://chadstreamz.sbs/assets/images/log2.png" class="watermark">
 
-    <div class="controls">
-      <i class="fas fa-play control-btn" id="play-btn"></i>
-      <div class="progress-container" id="progress-container"><div class="progress" id="progress"></div></div>
-      <span class="time-display" id="time-display">00:00 / 00:00</span>
-      <i class="fas fa-volume-up control-btn" id="volume-btn"></i>
-      <i class="fas fa-expand control-btn" id="fullscreen-btn"></i>
-      <a href="#" class="download-btn" id="download-btn">Download</a>
-    </div>
-  </div>
+  <!-- Big Play -->
+  <div id="big-play"><i class="fas fa-play"></i></div>
 
-  <div class="comments-section">
-    <h3>Comments</h3>
-    <div class="comment">User1: Awesome video!</div>
-    <div class="comment">User2: Loving the interface!</div>
-    <div class="comment">User3: Very smooth playback.</div>
+  <!-- Controls -->
+  <div id="controls">
+    <i id="playPause" class="fas fa-play"></i>
+    <div id="progress-container"><div id="progress"></div></div>
+    <span id="time">00:00 / 00:00</span>
+    <i id="volume" class="fas fa-volume-up"></i>
+    <i id="fullscreen" class="fas fa-expand"></i>
+    <i id="download" class="fas fa-download"></i>
   </div>
 </div>
 
 <script>
-const mediaLink = "{{ mediaLink }}"; // Replace with your media URL
-const video = document.getElementById('video-player');
-const playBtn = document.getElementById('play-btn');
-const bigPlay = document.getElementById('big-play');
-const progress = document.getElementById('progress');
-const progressContainer = document.getElementById('progress-container');
-const timeDisplay = document.getElementById('time-display');
-const volumeBtn = document.getElementById('volume-btn');
-const fullscreenBtn = document.getElementById('fullscreen-btn');
-const downloadBtn = document.getElementById('download-btn');
-const preloader = document.getElementById('preloader');
+const video = document.getElementById("video");
+const playPause = document.getElementById("playPause");
+const bigPlay = document.getElementById("big-play");
+const preloader = document.getElementById("preloader");
+const controls = document.getElementById("controls");
+const progress = document.getElementById("progress");
+const progressContainer = document.getElementById("progress-container");
+const timeDisplay = document.getElementById("time");
+const volumeBtn = document.getElementById("volume");
+const fullscreenBtn = document.getElementById("fullscreen");
+const downloadBtn = document.getElementById("download");
 
-if(!mediaLink){
-  alert("Error: Media URL not provided");
-} else {
-  video.src = mediaLink;
-  downloadBtn.href = mediaLink;
-  downloadBtn.download='';
+let mediaLink = "{{ mediaLink }}"; // replace with server logic
+video.src = mediaLink;
 
-  // Preloader fade
-  video.addEventListener('canplaythrough', ()=>{ preloader.classList.add('fade-out'); });
+// Preloader hide
+video.addEventListener("canplay", ()=>preloader.style.display="none");
 
-  // Play/Pause
-  function togglePlay(){
-    if(video.paused){ video.play(); playBtn.className='fas fa-pause control-btn'; bigPlay.style.display='none'; }
-    else { video.pause(); playBtn.className='fas fa-play control-btn'; bigPlay.style.display='block'; }
-  }
-  playBtn.onclick = togglePlay;
-  bigPlay.onclick = togglePlay;
-  video.addEventListener('play', ()=>{ playBtn.className='fas fa-pause control-btn'; bigPlay.style.display='none'; });
-  video.addEventListener('pause', ()=>{ playBtn.className='fas fa-play control-btn'; bigPlay.style.display='block'; });
-
-  // Progress
-  video.addEventListener('timeupdate', ()=>{
-    const percent = (video.currentTime / video.duration)*100;
-    progress.style.width = percent+'%';
-    const format = t=>{ let m=Math.floor(t/60).toString().padStart(2,'0'); let s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; };
-    timeDisplay.textContent = format(video.currentTime)+' / '+format(video.duration);
-  });
-
-  let isDragging=false;
-  function setProgress(e){
-    const rect = progressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const pos = Math.min(Math.max(0, x/rect.width), 1);
-    video.currentTime = pos*video.duration;
-  }
-  progressContainer.addEventListener('mousedown', e=>{ isDragging=true; setProgress(e); video.pause(); });
-  progressContainer.addEventListener('mousemove', e=>{ if(isDragging) setProgress(e); });
-  progressContainer.addEventListener('mouseup', e=>{ if(isDragging){ setProgress(e); isDragging=false; video.play(); } });
-
-  // Volume
-  volumeBtn.onclick = ()=>{ video.muted=!video.muted; volumeBtn.className=video.muted?'fas fa-volume-mute control-btn':'fas fa-volume-up control-btn'; };
-
-  // Fullscreen
-  fullscreenBtn.onclick = ()=>{
-    if(!document.fullscreenElement) video.requestFullscreen();
-    else document.exitFullscreen();
-  };
-
-  // Optional: handle landscape rotation for mobile
-  screen.orientation?.lock('landscape').catch(()=>{});
+// Play / Pause
+function togglePlay(){
+  if(video.paused){ video.play(); playPause.className="fas fa-pause"; bigPlay.style.display="none"; }
+  else { video.pause(); playPause.className="fas fa-play"; bigPlay.style.display="block"; }
 }
+playPause.onclick = togglePlay;
+bigPlay.onclick = togglePlay;
+video.onclick = togglePlay;
+
+// Update progress
+video.addEventListener("timeupdate", ()=>{
+  let percent = (video.currentTime / video.duration)*100;
+  progress.style.width = percent+"%";
+  timeDisplay.textContent = format(video.currentTime)+" / "+format(video.duration);
+});
+function format(t){ let m=Math.floor(t/60); let s=Math.floor(t%60);
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`; }
+
+// Seek
+progressContainer.addEventListener("click",(e)=>{
+  let pos = (e.offsetX / progressContainer.offsetWidth) * video.duration;
+  video.currentTime = pos;
+});
+
+// Volume
+volumeBtn.onclick=()=>{
+  video.muted=!video.muted;
+  volumeBtn.className= video.muted? "fas fa-volume-mute":"fas fa-volume-up";
+};
+
+// Fullscreen
+fullscreenBtn.onclick=()=>{
+  if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.className="fas fa-compress"; }
+  else { document.exitFullscreen(); fullscreenBtn.className="fas fa-expand"; }
+};
+
+// Download
+downloadBtn.onclick=()=>{
+  let a=document.createElement("a"); a.href=mediaLink; a.download="video.mp4";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+// Auto-hide controls
+let hideTimeout;
+function showControls(){
+  controls.classList.remove("hidden");
+  clearTimeout(hideTimeout);
+  hideTimeout = setTimeout(()=>controls.classList.add("hidden"),3000);
+}
+document.addEventListener("mousemove",showControls);
+document.addEventListener("keydown",showControls);
+video.addEventListener("play",showControls);
+video.addEventListener("pause",()=>controls.classList.remove("hidden"));
+showControls();
 </script>
 </body>
 </html>
