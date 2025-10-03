@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Play Files</title>
+<title>Netflix Style Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <style>
@@ -13,29 +12,43 @@
     font-family: Arial, sans-serif;
     overflow:hidden;
   }
+  #player-container {
+    position: relative;
+    width:100%; height:100%;
+    background:black;
+  }
   #stream-media { 
-    width:100%; height:100%; 
-    background:black; 
-    display:block; 
+    width:100%; height:100%;
     object-fit:cover;
+    background:black;
+    display:block;
   }
 
-  #error-message {
-    color:red; font-size:24px; text-align:center; margin-top:20px;
-  }
-
-  /* Netflix-style watermark (logo top-left) */
-  .mejs-watermark {
+  /* Logo top-left */
+  .player-logo {
     position: absolute;
-    top: 15px;
-    left: 20px;
-    height: 35px;
-    opacity: 0.9;
+    top: 20px; left: 20px;
+    height: 40px;
     z-index: 1000;
-    pointer-events: none;
   }
 
-  /* Control Bar - Netflix style */
+  /* Big Play Button */
+  #big-play {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px;
+    color: white;
+    background: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    padding: 28px;
+    cursor: pointer;
+    z-index: 1500;
+    transition: 0.3s;
+  }
+  #big-play:hover { background: rgba(229,9,20,0.9); }
+
+  /* Control Bar */
   #control-bar {
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -45,24 +58,23 @@
     padding: 15px 20px;
     z-index: 1000;
     opacity:0;
-    transition: opacity 0.5s;
+    transition: opacity 0.4s;
   }
-
-  body:hover #control-bar { opacity:1; }
+  #player-container:hover #control-bar { opacity:1; }
 
   #control-bar i {
     color: white;
     font-size: 22px;
     cursor: pointer;
-    margin-right: 15px;
+    margin-right: 20px;
     transition: 0.2s;
   }
-  #control-bar i:hover { color: #ff0000; }
+  #control-bar i:hover { color: #e50914; }
 
   #progress-container {
     flex: 1;
     height: 5px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.3);
     border-radius: 3px;
     cursor: pointer;
     margin: 0 15px;
@@ -70,7 +82,7 @@
   }
   #progress {
     height: 5px;
-    background: #e50914; /* Netflix red */
+    background: #e50914;
     width: 0%;
     border-radius: 3px;
   }
@@ -81,123 +93,85 @@
     white-space: nowrap;
   }
 
-  /* Big Play Button */
-  #big-play {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 80px;
-    color: white;
-    background: rgba(0,0,0,0.5);
-    border-radius: 50%;
-    padding: 25px;
-    cursor: pointer;
-    z-index: 1500;
-    transition: 0.3s;
-  }
-  #big-play:hover { background: rgba(229,9,20,0.8); }
-
-  /* Toast Notification */
-  #toast {
-    position: fixed;
-    bottom: 20px; right: 20px;
-    background: rgba(0,0,0,0.9);
-    color: white;
-    padding: 12px 18px;
-    border-radius: 6px;
-    font-size: 14px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-    z-index: 3000;
-  }
-  #toast.show { opacity: 1; }
-
-  /* Responsive */
   @media(max-width:768px){
-    .mejs-watermark { height: 25px; }
-    #control-bar i { font-size:18px; margin-right:10px; }
-    #big-play { font-size:50px; padding:15px; }
+    .player-logo { height: 28px; }
+    #big-play { font-size:55px; padding:20px; }
+    #control-bar i { font-size:18px; margin-right:12px; }
   }
 </style>
 </head>
 <body>
 
-<video id="stream-media" preload="auto"></video>
-<div id="error-message"></div>
+<div id="player-container">
+  <!-- Replace logo with yours -->
+  <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo" class="player-logo">
 
-<!-- Big Play -->
-<div id="big-play"><i class="fas fa-play"></i></div>
+  <video id="stream-media" preload="auto"></video>
 
-<!-- Toast -->
-<div id="toast">Press play to start watching</div>
+  <!-- Big Play -->
+  <div id="big-play"><i class="fas fa-play"></i></div>
+
+  <!-- Controls -->
+  <div id="control-bar">
+    <i id="play-btn" class="fas fa-play"></i>
+    <div id="progress-container"><div id="progress"></div></div>
+    <span id="time-display">00:00 / 00:00</span>
+    <i id="volume-btn" class="fas fa-volume-up"></i>
+    <i id="fullscreen-btn" class="fas fa-expand"></i>
+  </div>
+</div>
 
 <script>
-var mediaLink = "{{ mediaLink }}"; // replace with your media URL
+var mediaLink = "{{ mediaLink }}"; // replace with your media link
+var video = document.getElementById('stream-media');
+var bigPlay = document.getElementById("big-play");
+var playBtn = document.getElementById("play-btn");
+var volumeBtn = document.getElementById("volume-btn");
+var fullscreenBtn = document.getElementById("fullscreen-btn");
+var progress = document.getElementById("progress");
+var progressContainer = document.getElementById("progress-container");
+var timeDisplay = document.getElementById("time-display");
 
-if(mediaLink){
-  var video = document.getElementById('stream-media');
-  var bigPlay = document.getElementById("big-play");
-  var toast = document.getElementById("toast");
+if(mediaLink){ video.src = mediaLink; }
+else { document.body.innerHTML="<h2 style='color:red;text-align:center;margin-top:20px;'>Error: Media URL not provided</h2>"; }
 
-  video.src = mediaLink;
+// Big play button
+bigPlay.onclick = ()=>{ video.play(); bigPlay.style.display="none"; playBtn.className="fas fa-pause"; };
 
-  bigPlay.onclick = function(){
-    video.play();
-    bigPlay.style.display="none";
-  };
+// Toggle play/pause
+playBtn.onclick = ()=>{
+  if(video.paused){ video.play(); playBtn.className="fas fa-pause"; }
+  else { video.pause(); playBtn.className="fas fa-play"; }
+};
+video.addEventListener("play", ()=>{ bigPlay.style.display="none"; playBtn.className="fas fa-pause"; });
+video.addEventListener("pause", ()=>{ playBtn.className="fas fa-play"; });
 
-  video.addEventListener("play", ()=>bigPlay.style.display="none");
+// Volume toggle
+volumeBtn.onclick = ()=>{
+  video.muted = !video.muted;
+  volumeBtn.className = video.muted ? "fas fa-volume-mute" : "fas fa-volume-up";
+};
 
-  // Toast auto show
-  setTimeout(function(){
-    toast.classList.add("show");
-    setTimeout(()=>toast.classList.remove("show"), 3000);
-  }, 1500);
+// Fullscreen toggle
+fullscreenBtn.onclick = ()=>{
+  if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.className="fas fa-compress"; }
+  else { document.exitFullscreen(); fullscreenBtn.className="fas fa-expand"; }
+};
 
-  // Create watermark
-  var watermark = document.createElement('img');
-  watermark.src = 'https://upload.wikimedia.org/wikipedia/commons/7/75/Netflix_icon.svg';
-  watermark.className = 'mejs-watermark';
-  document.body.appendChild(watermark);
-
-  // Control bar
-  var controlBar = document.createElement('div'); controlBar.id = 'control-bar'; document.body.appendChild(controlBar);
-  var playBtn = document.createElement('i'); playBtn.className='fas fa-play'; controlBar.appendChild(playBtn);
-
-  playBtn.onclick = function(){
-    if(video.paused){ video.play(); playBtn.className='fas fa-pause'; }
-    else { video.pause(); playBtn.className='fas fa-play'; }
-  };
-
-  var progressContainer = document.createElement('div'); progressContainer.id='progress-container';
-  var progress = document.createElement('div'); progress.id='progress'; progressContainer.appendChild(progress);
-  controlBar.appendChild(progressContainer);
-
-  let isDragging = false;
-  function updateProgress(e){
-    var rect = progressContainer.getBoundingClientRect();
-    var pos = Math.min(Math.max(0, (e.clientX - rect.left)), rect.width) / rect.width;
-    video.currentTime = pos * video.duration;
+// Progress bar
+video.addEventListener("timeupdate", ()=>{
+  if(video.duration){
+    progress.style.width = (video.currentTime / video.duration) * 100 + '%';
+    let m = (t)=>String(Math.floor(t/60)).padStart(2,'0');
+    let s = (t)=>String(Math.floor(t%60)).padStart(2,'0');
+    timeDisplay.textContent = m(video.currentTime)+":"+s(video.currentTime)+" / "+m(video.duration)+":"+s(video.duration);
   }
-  progressContainer.addEventListener('mousedown', (e)=>{ isDragging=true; updateProgress(e); });
-  progressContainer.addEventListener('mousemove', (e)=>{ if(isDragging) updateProgress(e); });
-  progressContainer.addEventListener('mouseup', (e)=>{ if(isDragging){ updateProgress(e); isDragging=false; } });
-
-  var timeDisplay = document.createElement('span'); timeDisplay.id='time-display'; timeDisplay.textContent='00:00 / 00:00';
-  controlBar.appendChild(timeDisplay);
-
-  video.addEventListener('timeupdate', function(){
-    if(video.duration){
-      progress.style.width = (video.currentTime / video.duration) * 100 + '%';
-      function formatTime(t){ var m=Math.floor(t/60).toString().padStart(2,'0'); var s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; }
-      timeDisplay.textContent = formatTime(video.currentTime)+' / '+formatTime(video.duration);
-    }
-  });
-
-}else{
-  document.getElementById('error-message').textContent = 'Error: Media URL not provided';
-}
+});
+progressContainer.onclick = (e)=>{
+  let rect = progressContainer.getBoundingClientRect();
+  let pos = (e.clientX - rect.left) / rect.width;
+  video.currentTime = pos * video.duration;
+};
 </script>
 </body>
 </html>
