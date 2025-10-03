@@ -2,71 +2,57 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Netflix Style Player</title>
+<title>Play Files</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <style>
-  html, body { margin:0; padding:0; height:100%; background:#000; font-family: Arial, sans-serif; color:white; }
-  body { display:flex; flex-direction:column; }
-  
-  /* Top Player */
-  #player-container { position:relative; width:100%; background:black; }
-  #stream-media { width:100%; max-height:60vh; background:black; }
-  #big-play { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:70px; color:white; background:rgba(0,0,0,0.5); border-radius:50%; padding:20px; cursor:pointer; z-index:1500; transition:0.3s; }
-  #big-play:hover { background:rgba(255,255,255,0.7); color:black; }
-
-  /* Watermark */
-  .mejs-watermark { position:absolute; top:10px; right:10px; width:80px; opacity:0.6; z-index:1000; pointer-events:none; }
-
-  /* Control Bar */
-  #control-bar { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; padding:5px 10px; z-index:1000; flex-wrap:wrap; }
-  #control-bar i { color:white; font-size:20px; cursor:pointer; margin-right:10px; }
-  #progress-container { flex:1; height:5px; background:rgba(255,255,255,0.3); border-radius:3px; cursor:pointer; margin:0 10px; position:relative; }
-  #progress { height:5px; background:#e50914; width:0%; border-radius:3px; }
-  #time-display { color:white; font-size:14px; white-space:nowrap; }
-
-  /* Top Buttons */
-  .custom-button { position:absolute; width:40px; height:40px; border-radius:50%; text-align:center; line-height:40px; color:white; background-color:rgba(0,0,0,0.7); z-index:1000; cursor:pointer; font-size:18px; transition:0.3s; }
-  .custom-button:hover { background-color:rgba(255,255,255,0.7); color:black; }
+  /* Basic */
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Arial, sans-serif; background:#111; color:white; }
 
   /* Preloader */
-  #preloader { position:fixed; inset:0; background:black; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:2000; opacity:1; transition:opacity 1s ease; }
-  #preloader.fade-out { opacity:0; pointer-events:none; }
-  #spinner { width:48px; height:48px; border:5px solid #fff; border-top:5px solid #e50914; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:10px; opacity:0.8; }
-  @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  #preloader { position:fixed; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2000; }
+  #spinner { width:48px; height:48px; border:5px solid #fff; border-top:5px solid #ff0000; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:10px; }
+  @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+
+  /* Video Container */
+  .video-section { position:relative; width:100%; max-width:1200px; margin:0 auto; background:black; }
+  #stream-media { width:100%; height:auto; max-height:70vh; background:black; display:block; }
+
+  /* Controls */
+  .controls { position:absolute; bottom:10px; left:10px; right:10px; display:flex; align-items:center; justify-content:space-between; background: rgba(0,0,0,0.6); padding:5px 10px; border-radius:8px; }
+  .controls i { font-size:20px; cursor:pointer; margin-right:10px; }
+  #progress-container { flex:1; height:5px; background:rgba(255,255,255,0.3); border-radius:3px; cursor:pointer; margin:0 10px; position:relative; }
+  #progress { height:5px; background:#ff0000; width:0%; border-radius:3px; }
+
+  /* Big Play */
+  #big-play { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:70px; color:white; background: rgba(0,0,0,0.5); border-radius:50%; padding:20px; cursor:pointer; z-index:1500; transition:0.3s; }
+  #big-play:hover { background: rgba(255,255,255,0.7); color:black; }
 
   /* Toast */
-  #toast { position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.8); color:white; padding:12px 18px; border-radius:8px; font-size:14px; opacity:0; pointer-events:none; transition:opacity 0.5s ease; z-index:3000; }
+  #toast { position:fixed; bottom:20px; right:20px; background: rgba(0,0,0,0.8); padding:12px 18px; border-radius:8px; opacity:0; transition:0.5s; z-index:3000; }
   #toast.show { opacity:1; }
 
-  /* Popup */
-  #popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index:4000; }
-  #popup-box { background:#111; padding:30px; border-radius:12px; text-align:center; color:white; max-width:300px; }
-  #popup-box h2 { margin-bottom:20px; font-size:20px; }
-  #popup-box button { padding:10px 20px; margin:0 10px; border:none; border-radius:6px; font-size:16px; cursor:pointer; transition:0.3s; }
-  #popup-box button#play-btn { background:#28a745; color:white; }
-  #popup-box button#download-btn { background:#007bff; color:white; }
-  #popup-box button:hover { opacity:0.8; }
-
-  /* Video Cards */
-  #video-cards { display:flex; overflow-x:auto; padding:20px; gap:15px; background:#111; }
-  .video-card { min-width:200px; background:#222; border-radius:8px; overflow:hidden; cursor:pointer; transition:0.3s; flex-shrink:0; }
-  .video-card img { width:100%; display:block; }
-  .video-card .title { padding:10px; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
   /* Comments Section */
-  #comments { background:#111; padding:20px; flex:1; overflow-y:auto; }
-  #comments h3 { margin-bottom:10px; }
-  .comment { background:#222; padding:10px; border-radius:6px; margin-bottom:10px; }
-  .comment .author { font-weight:bold; margin-bottom:5px; }
+  .comments-section { max-width:1200px; margin:20px auto; padding:15px; background:#1a1a1a; border-radius:8px; }
+  .comments-section h3 { margin-bottom:15px; }
+  .comment { border-bottom:1px solid rgba(255,255,255,0.1); padding:10px 0; }
+  .comment:last-child { border:none; }
+  .comment input, .comment textarea { width:100%; padding:8px; margin-top:5px; border-radius:4px; border:none; background:#222; color:white; }
+
+  /* Download Button */
+  #download-btn { background:#ff0000; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:16px; margin-top:10px; }
+  #download-btn:hover { opacity:0.8; }
+
+  /* Watermark */
+  .watermark { position:absolute; top:10px; right:10px; width:80px; opacity:0.6; pointer-events:none; }
 
   /* Responsive */
   @media(max-width:768px){
-    .custom-button { width:30px; height:30px; line-height:30px; font-size:14px; }
     #big-play { font-size:50px; padding:15px; }
-    .video-card { min-width:140px; }
+    .controls i { font-size:16px; margin-right:5px; }
+    .watermark { width:60px; }
   }
 </style>
 </head>
@@ -75,121 +61,91 @@
 <!-- Preloader -->
 <div id="preloader">
   <div id="spinner"></div>
-  <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo" style="width:120px;">
+  <img src="https://chadstreamz.sbs/assets/images/log2.png" style="width:120px;" alt="Logo">
 </div>
 
-<!-- Video Player -->
-<div id="player-container">
+<!-- Video Section -->
+<div class="video-section">
   <video id="stream-media" preload="auto"></video>
+  <img src="https://chadstreamz.sbs/assets/images/log2.png" class="watermark">
   <div id="big-play"><i class="fas fa-play"></i></div>
-  <img class="mejs-watermark" src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo">
-  <div id="control-bar"></div>
-</div>
-
-<!-- Video Cards -->
-<div id="video-cards">
-  <!-- Dynamically generated video cards -->
-</div>
-
-<!-- Comments Section -->
-<div id="comments">
-  <h3>Comments</h3>
-  <!-- Example comments -->
-  <div class="comment"><div class="author">User1</div><div class="text">Great video!</div></div>
-  <div class="comment"><div class="author">User2</div><div class="text">Loved this content.</div></div>
+  <div class="controls">
+    <i id="play-btn" class="fas fa-play"></i>
+    <div id="progress-container"><div id="progress"></div></div>
+    <i id="volume-btn" class="fas fa-volume-up"></i>
+    <i id="fullscreen-btn" class="fas fa-expand"></i>
+    <i id="download-icon" class="fas fa-download"></i>
+  </div>
 </div>
 
 <!-- Toast -->
 <div id="toast">You can download this video</div>
 
-<!-- Popup -->
-<div id="popup-overlay">
-  <div id="popup-box">
-    <h2>Do you want to Play or Download?</h2>
-    <button id="play-btn">Play</button>
-    <button id="download-btn">Download</button>
+<!-- Comments -->
+<div class="comments-section">
+  <h3>Comments</h3>
+  <div class="comment">
+    <strong>User1:</strong>
+    <p>Great video!</p>
   </div>
+  <div class="comment">
+    <strong>User2:</strong>
+    <p>Loved the quality.</p>
+  </div>
+  <div class="comment">
+    <strong>Add Comment:</strong>
+    <textarea placeholder="Write your comment"></textarea>
+    <button style="margin-top:10px;">Post</button>
+  </div>
+</div>
+
+<!-- Download Button -->
+<div style="text-align:center;">
+  <button id="download-btn">Download Video</button>
 </div>
 
 <script>
 var mediaLink = "{{ mediaLink }}"; // replace with your media URL
-var relatedVideos = [
-  {title:"Video 1", thumb:"https://picsum.photos/200/120?random=1", link:"#"},
-  {title:"Video 2", thumb:"https://picsum.photos/200/120?random=2", link:"#"},
-  {title:"Video 3", thumb:"https://picsum.photos/200/120?random=3", link:"#"},
-  {title:"Video 4", thumb:"https://picsum.photos/200/120?random=4", link:"#"}
-];
+var video = document.getElementById('stream-media');
+var preloader = document.getElementById('preloader');
+var bigPlay = document.getElementById('big-play');
+var toast = document.getElementById('toast');
 
-// Generate video cards
-var videoCardsContainer = document.getElementById('video-cards');
-relatedVideos.forEach(v=>{
-  var card = document.createElement('div'); card.className='video-card';
-  card.innerHTML=`<img src="${v.thumb}" alt="${v.title}"><div class="title">${v.title}</div>`;
-  card.onclick=()=>{ mediaLink=v.link; initPlayer(); };
-  videoCardsContainer.appendChild(card);
-});
+if(!mediaLink){ alert('Error: Media URL not provided'); }
 
-// Popup buttons
-var popupOverlay = document.getElementById('popup-overlay');
-var playBtnPopup = document.getElementById('play-btn');
-var downloadBtnPopup = document.getElementById('download-btn');
+video.src = mediaLink;
 
-playBtnPopup.onclick = function(){
-  popupOverlay.style.display='none';
-  initPlayer();
-};
-downloadBtnPopup.onclick = function(){
-  var a=document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-};
+// Preloader
+video.addEventListener('canplaythrough', function(){ setTimeout(()=>preloader.style.display='none',500); });
 
-// Init player
-function initPlayer(){
-  var video = document.getElementById('stream-media');
-  video.src=mediaLink;
-  var preloader=document.getElementById("preloader");
-  var bigPlay=document.getElementById("big-play");
-  var toast=document.getElementById("toast");
-  
-  video.addEventListener("canplaythrough", function(){ setTimeout(()=>preloader.classList.add("fade-out"),500); });
+// Big Play
+bigPlay.onclick = function(){ video.play(); bigPlay.style.display='none'; };
 
-  bigPlay.onclick=function(){ video.play(); bigPlay.style.display="none"; };
+// Controls
+var playBtn = document.getElementById('play-btn');
+playBtn.onclick = function(){ if(video.paused){ video.play(); playBtn.className='fas fa-pause'; }else{ video.pause(); playBtn.className='fas fa-play'; } };
 
-  setInterval(function(){ toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),4000); },20000);
+var volumeBtn = document.getElementById('volume-btn');
+volumeBtn.onclick = function(){ video.muted = !video.muted; volumeBtn.className = video.muted?'fas fa-volume-mute':'fas fa-volume-up'; };
 
-  // Top buttons
-  function createButton(iconClass, top, left, onClick){
-    var btn=document.createElement('div'); btn.className='custom-button'; btn.style.top=top+'px'; btn.style.left=left+'px';
-    btn.innerHTML='<i class="'+iconClass+'"></i>'; btn.onclick=onClick; document.body.appendChild(btn); return btn;
-  }
+var fullscreenBtn = document.getElementById('fullscreen-btn');
+fullscreenBtn.onclick = function(){ if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.className='fas fa-compress'; } else{ document.exitFullscreen(); fullscreenBtn.className='fas fa-expand'; } };
 
-  var topPlayBtn=createButton('fas fa-play',10,10,function(){
-    if(video.paused){ video.play(); topPlayBtn.innerHTML='<i class="fas fa-pause"></i>'; }
-    else { video.pause(); topPlayBtn.innerHTML='<i class="fas fa-play"></i>'; }
-  });
-  var volumeBtn=createButton('fas fa-volume-up',60,10,function(){ video.muted=!video.muted; volumeBtn.innerHTML=video.muted?'<i class="fas fa-volume-mute"></i>':'<i class="fas fa-volume-up"></i>'; });
-  var fullscreenBtn=createButton('fas fa-expand',110,10,function(){ if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-compress"></i>'; }else{ document.exitFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-expand"></i>'; } });
-  createButton('fas fa-download',160,10,function(){ var a=document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a); });
-  createButton('fas fa-share',210,10,function(){ if(navigator.share){ navigator.share({ title:"Play", url:mediaLink }); } });
+// Progress
+var progressContainer = document.getElementById('progress-container');
+var progress = document.getElementById('progress');
+video.addEventListener('timeupdate', function(){ progress.style.width = (video.currentTime/video.duration)*100+'%'; });
+progressContainer.addEventListener('click', function(e){ var pos = (e.offsetX / this.offsetWidth); video.currentTime = pos * video.duration; });
 
-  // Bottom control bar
-  var controlBar=document.getElementById('control-bar');
-  var bottomPlay=document.createElement('i'); bottomPlay.className='fas fa-play'; controlBar.appendChild(bottomPlay);
-  bottomPlay.onclick=function(){ if(video.paused){ video.play(); bottomPlay.className='fas fa-pause'; topPlayBtn.innerHTML='<i class="fas fa-pause"></i>'; }else{ video.pause(); bottomPlay.className='fas fa-play'; topPlayBtn.innerHTML='<i class="fas fa-play"></i>'; } };
+// Download
+var downloadBtn = document.getElementById('download-btn');
+downloadBtn.onclick = function(){ var a=document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
-  var progressContainer=document.createElement('div'); progressContainer.id='progress-container';
-  var progress=document.createElement('div'); progress.id='progress'; progressContainer.appendChild(progress); controlBar.appendChild(progressContainer);
+// Download icon
+document.getElementById('download-icon').onclick = downloadBtn.onclick;
 
-  let isDragging=false;
-  function updateProgress(e){ var rect=progressContainer.getBoundingClientRect(); var clientX=e.clientX ?? (e.touches ? e.touches[0].clientX:0); var pos=Math.min(Math.max(0, clientX-rect.left),rect.width)/rect.width; video.currentTime=pos*video.duration; }
-  progressContainer.addEventListener('pointerdown',(e)=>{ isDragging=true; updateProgress(e); video.pause(); progressContainer.setPointerCapture(e.pointerId); });
-  progressContainer.addEventListener('pointermove',(e)=>{ if(isDragging) updateProgress(e); });
-  progressContainer.addEventListener('pointerup',(e)=>{ if(isDragging){ updateProgress(e); isDragging=false; video.play(); } });
-
-  var timeDisplay=document.createElement('span'); timeDisplay.id='time-display'; timeDisplay.textContent='00:00 / 00:00'; controlBar.appendChild(timeDisplay);
-
-  video.addEventListener('timeupdate',function(){ if(!isDragging){ progress.style.width=(video.currentTime/video.duration)*100+'%'; } function formatTime(t){ var m=Math.floor(t/60).toString().padStart(2,'0'); var s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; } timeDisplay.textContent=formatTime(video.currentTime)+' / '+formatTime(video.duration); });
-}
+// Toast notification
+setInterval(function(){ toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),4000); },20000);
 </script>
-
 </body>
 </html>
