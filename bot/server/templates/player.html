@@ -2,174 +2,147 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Modern Video Player</title>
+<title>Video Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
 <style>
-/* Reset */
-* { margin:0; padding:0; box-sizing:border-box; }
+  html, body { margin:0; padding:0; height:100%; width:100%; background:#000; font-family: Arial, sans-serif; color:white; }
+  body { display:flex; flex-direction:column; }
 
-body { font-family: Arial, sans-serif; background: #111; color: #fff; overflow-x: hidden; }
+  /* Video container */
+  #video-container { position: relative; width:100%; background:black; display:flex; justify-content:center; align-items:center; }
+  #stream-media { width:100%; max-height:60vh; background:black; }
 
-/* Container */
-.container { display: flex; flex-direction: column; min-height: 100vh; }
+  /* Big Play Button */
+  #big-play { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:70px; color:white; background:rgba(0,0,0,0.5); border-radius:50%; padding:20px; cursor:pointer; z-index:10; transition:0.3s; }
+  #big-play:hover { background:rgba(255,255,255,0.7); color:black; }
 
-/* Video Section */
-.video-section { position: relative; width: 100%; background: black; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-#stream-media { width: 100%; max-height: 80vh; background: black; }
+  /* Control Bar */
+  #control-bar { position: absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; padding:10px; z-index:10; flex-wrap:wrap; }
+  #control-bar i { font-size:20px; margin-right:10px; cursor:pointer; }
+  #progress-container { flex:1; height:5px; background: rgba(255,255,255,0.3); border-radius:3px; margin:0 10px; position:relative; cursor:pointer; }
+  #progress { height:5px; background:#e50914; width:0%; border-radius:3px; }
+  #time-display { font-size:14px; white-space:nowrap; }
 
-/* Big Play */
-#big-play { position: absolute; font-size: 70px; color: #fff; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 50%; cursor: pointer; z-index: 1000; transition: 0.3s; }
-#big-play:hover { background: rgba(255,255,255,0.7); color:black; }
+  /* Top buttons */
+  .custom-button { position:absolute; width:40px; height:40px; border-radius:50%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.7); color:white; cursor:pointer; transition:0.3s; }
+  .custom-button:hover { background:rgba(255,255,255,0.7); color:black; }
 
-/* Control Bar */
-#control-bar { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; padding: 5px 15px; z-index: 1000; flex-wrap: wrap; }
-#control-bar i { color:white; font-size:20px; cursor:pointer; margin-right:10px; }
-#progress-container { flex:1; height:5px; background: rgba(255,255,255,0.3); border-radius:3px; cursor:pointer; position:relative; margin:0 10px; }
-#progress { height:5px; background:#e50914; width:0%; border-radius:3px; }
-#time-display { font-size:14px; white-space:nowrap; color:#fff; }
+  /* Watermark */
+  .mejs-watermark { position:absolute; top:10px; right:10px; width:80px; opacity:0.6; pointer-events:none; }
 
-/* Top Buttons */
-.custom-button { position:absolute; width:40px; height:40px; border-radius:50%; text-align:center; line-height:40px; color:#fff; background: rgba(0,0,0,0.7); z-index:1000; cursor:pointer; transition:0.3s; font-size:18px; }
-.custom-button:hover { background: rgba(255,255,255,0.7); color:black; }
+  /* Comments section */
+  #comments { flex:1; padding:20px; background:#111; overflow-y:auto; }
+  #comments h3 { margin-bottom:10px; }
+  .comment { margin-bottom:15px; padding:10px; background:#222; border-radius:8px; }
+  .comment .user { font-weight:bold; margin-bottom:5px; }
 
-/* Watermark */
-.mejs-watermark { position:absolute; top:10px; right:10px; width:80px; opacity:0.6; z-index:1000; pointer-events:none; }
+  /* Download button */
+  #download-btn { display:inline-block; background:#e50914; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; margin-top:10px; cursor:pointer; }
 
-/* Comments Section */
-.comments { background:#1c1c1c; padding:20px; display:flex; flex-direction:column; gap:15px; }
-.comments h3 { margin-bottom:10px; color:#e50914; }
-.comment { background:#2a2a2a; padding:10px; border-radius:6px; }
-.comment input { width:100%; padding:8px; border:none; border-radius:4px; margin-top:5px; }
-
-/* Download Button */
-.download-btn { margin-top:10px; background:#e50914; color:white; border:none; padding:12px 20px; font-size:16px; border-radius:6px; cursor:pointer; transition:0.3s; width:fit-content; }
-.download-btn:hover { background:#f6121d; }
-
-/* Preloader */
-#preloader { position:fixed; inset:0; background:black; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:2000; }
-#spinner { width:48px; height:48px; border:5px solid #fff; border-top:5px solid #e50914; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:10px; }
-@keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
-
-/* Toast */
-#toast { position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.8); padding:12px 18px; border-radius:8px; font-size:14px; opacity:0; pointer-events:none; transition:0.5s; z-index:3000; }
-#toast.show { opacity:1; }
-
-/* Responsive */
-@media(max-width:768px){
-  #big-play { font-size:50px; padding:15px; }
-  .custom-button { width:30px; height:30px; line-height:30px; font-size:14px; }
-  #control-bar i { font-size:16px; margin-right:5px; }
-  .mejs-watermark { width:60px; }
-}
-@media(min-width:1200px){
-  .custom-button { width:45px; height:45px; line-height:45px; font-size:20px; }
-  #control-bar i { font-size:22px; margin-right:10px; }
-  .mejs-watermark { width:100px; }
-}
+  /* Responsive */
+  @media(max-width:768px){
+    #stream-media { max-height:40vh; }
+    #big-play { font-size:50px; padding:15px; }
+    .custom-button { width:35px; height:35px; font-size:16px; }
+    #control-bar i { font-size:16px; margin-right:5px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="container">
-
-  <!-- Preloader -->
-  <div id="preloader">
-    <div id="spinner"></div>
-    <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo" style="width:180px; filter:grayscale(100%) contrast(200%)">
+<div id="video-container">
+  <video id="stream-media" preload="auto"></video>
+  <div id="big-play"><i class="fas fa-play"></i></div>
+  <div id="control-bar">
+    <i id="bottom-play" class="fas fa-play"></i>
+    <div id="progress-container"><div id="progress"></div></div>
+    <span id="time-display">00:00 / 00:00</span>
   </div>
-
-  <!-- Video Section -->
-  <div class="video-section">
-    <video id="stream-media" preload="auto"></video>
-    <div id="big-play"><i class="fas fa-play"></i></div>
-    <div id="control-bar">
-      <i id="play-pause" class="fas fa-play"></i>
-      <div id="progress-container"><div id="progress"></div></div>
-      <span id="time-display">00:00 / 00:00</span>
-      <i id="volume-btn" class="fas fa-volume-up"></i>
-      <i id="fullscreen-btn" class="fas fa-expand"></i>
-      <i id="download-btn-bottom" class="fas fa-download"></i>
-    </div>
-    <img src="https://chadstreamz.sbs/assets/images/log2.png" class="mejs-watermark">
-  </div>
-
-  <!-- Comments & Download -->
-  <div class="comments">
-    <h3>Comments</h3>
-    <div class="comment">User1: Great video!</div>
-    <div class="comment">User2: Loved it!</div>
-    <input type="text" placeholder="Add a comment...">
-    <button class="download-btn" id="download-btn">Download Video</button>
-  </div>
+  <img src="https://chadstreamz.sbs/assets/images/log2.png" class="mejs-watermark">
+  <div class="custom-button" id="top-play" style="top:10px; left:10px;"><i class="fas fa-play"></i></div>
+  <div class="custom-button" id="volume-btn" style="top:60px; left:10px;"><i class="fas fa-volume-up"></i></div>
+  <div class="custom-button" id="fullscreen-btn" style="top:110px; left:10px;"><i class="fas fa-expand"></i></div>
 </div>
 
-<!-- Toast -->
-<div id="toast">You can download this video</div>
+<div id="comments">
+  <h3>Comments</h3>
+  <div class="comment"><div class="user">User1:</div> Amazing video!</div>
+  <div class="comment"><div class="user">User2:</div> Loved this content, keep it up!</div>
+  <div class="comment"><div class="user">User3:</div> Can I download this?</div>
+  <a id="download-btn">Download Video</a>
+</div>
 
 <script>
-var mediaLink = "{{ mediaLink }}"; // replace with your media URL
+var mediaLink = "{{ mediaLink }}"; // Replace with your media URL
 var video = document.getElementById('stream-media');
 var bigPlay = document.getElementById('big-play');
-var preloader = document.getElementById('preloader');
-var toast = document.getElementById('toast');
+var bottomPlay = document.getElementById('bottom-play');
+var topPlayBtn = document.getElementById('top-play');
+var volumeBtn = document.getElementById('volume-btn');
+var fullscreenBtn = document.getElementById('fullscreen-btn');
+var progress = document.getElementById('progress');
+var progressContainer = document.getElementById('progress-container');
+var timeDisplay = document.getElementById('time-display');
+var downloadBtn = document.getElementById('download-btn');
 
-// Initialize video
-function initPlayer(){
-  video.src = mediaLink;
+if(!mediaLink){ alert("Media URL not provided"); }
 
-  video.addEventListener("canplaythrough", ()=>{ preloader.style.display="none"; });
+video.src = mediaLink;
 
-  // Big play
-  bigPlay.onclick = ()=>{ video.play(); bigPlay.style.display="none"; playPauseBtn.className='fas fa-pause'; };
-
-  // Controls
-  var playPauseBtn = document.getElementById('play-pause');
-  playPauseBtn.onclick = ()=>{ if(video.paused){ video.play(); playPauseBtn.className='fas fa-pause'; bigPlay.style.display="none"; } else { video.pause(); playPauseBtn.className='fas fa-play'; bigPlay.style.display="block"; } };
-
-  // Volume
-  var volumeBtn = document.getElementById('volume-btn');
-  volumeBtn.onclick = ()=>{ video.muted = !video.muted; volumeBtn.className = video.muted?'fas fa-volume-mute':'fas fa-volume-up'; };
-
-  // Fullscreen
-  var fullscreenBtn = document.getElementById('fullscreen-btn');
-  fullscreenBtn.onclick = ()=>{
-    if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.className='fas fa-compress'; }
-    else { document.exitFullscreen(); fullscreenBtn.className='fas fa-expand'; }
-  };
-
-  // Progress bar
-  var progressContainer = document.getElementById('progress-container');
-  var progress = document.getElementById('progress');
-  var isDragging = false;
-
-  function updateProgress(e){
-    var rect = progressContainer.getBoundingClientRect();
-    var clientX = e.clientX ?? (e.touches ? e.touches[0].clientX : 0);
-    var pos = Math.min(Math.max(0, clientX - rect.left), rect.width) / rect.width;
-    video.currentTime = pos * video.duration;
-  }
-
-  progressContainer.addEventListener('pointerdown', (e)=>{ isDragging=true; updateProgress(e); video.pause(); progressContainer.setPointerCapture(e.pointerId); });
-  progressContainer.addEventListener('pointermove', (e)=>{ if(isDragging) updateProgress(e); });
-  progressContainer.addEventListener('pointerup', (e)=>{ if(isDragging){ updateProgress(e); isDragging=false; video.play(); } });
-
-  video.addEventListener('timeupdate', ()=>{ if(!isDragging){ progress.style.width = (video.currentTime/video.duration)*100+'%'; } var m=Math.floor(video.currentTime/60).toString().padStart(2,'0'); var s=Math.floor(video.currentTime%60).toString().padStart(2,'0'); var dm=Math.floor(video.duration/60).toString().padStart(2,'0'); var ds=Math.floor(video.duration%60).toString().padStart(2,'0'); document.getElementById('time-display').textContent = m+':'+s+' / '+dm+':'+ds; });
-
-  // Toast notification every 20s
-  setInterval(()=>{ toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),4000); }, 20000);
-
-  // Download buttons
-  document.getElementById('download-btn').onclick = downloadVideo;
-  document.getElementById('download-btn-bottom').onclick = downloadVideo;
+// Play/Pause Logic
+function togglePlay() {
+  if(video.paused){ video.play(); bottomPlay.className='fas fa-pause'; topPlayBtn.innerHTML='<i class="fas fa-pause"></i>'; bigPlay.style.display='none'; }
+  else { video.pause(); bottomPlay.className='fas fa-play'; topPlayBtn.innerHTML='<i class="fas fa-play"></i>'; bigPlay.style.display='block'; }
 }
 
-function downloadVideo(){
-  var a = document.createElement('a'); a.href=mediaLink; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
+bigPlay.onclick = togglePlay;
+bottomPlay.onclick = togglePlay;
+topPlayBtn.onclick = togglePlay;
 
-// Initialize if media link exists
-if(mediaLink){ initPlayer(); } else { alert('Media URL not provided'); }
+// Volume
+volumeBtn.onclick = function(){
+  if(video.muted){ video.muted=false; volumeBtn.innerHTML='<i class="fas fa-volume-up"></i>'; }
+  else { video.muted=true; volumeBtn.innerHTML='<i class="fas fa-volume-mute"></i>'; }
+};
+
+// Fullscreen
+fullscreenBtn.onclick = function(){
+  if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-compress"></i>'; }
+  else { document.exitFullscreen(); fullscreenBtn.innerHTML='<i class="fas fa-expand"></i>'; }
+};
+
+// Progress Bar
+let isDragging = false;
+function updateProgress(e){
+  const rect = progressContainer.getBoundingClientRect();
+  const x = e.clientX ?? e.touches[0].clientX;
+  let pos = Math.min(Math.max(0, x - rect.left), rect.width)/rect.width;
+  video.currentTime = pos*video.duration;
+}
+progressContainer.addEventListener('pointerdown', (e)=>{ isDragging=true; updateProgress(e); video.pause(); progressContainer.setPointerCapture(e.pointerId); });
+progressContainer.addEventListener('pointermove', (e)=>{ if(isDragging) updateProgress(e); });
+progressContainer.addEventListener('pointerup', (e)=>{ if(isDragging){ updateProgress(e); isDragging=false; video.play(); }});
+video.addEventListener('timeupdate', ()=>{ if(!isDragging){ progress.style.width = (video.currentTime/video.duration)*100 + '%'; } 
+  const m=Math.floor(video.currentTime/60).toString().padStart(2,'0');
+  const s=Math.floor(video.currentTime%60).toString().padStart(2,'0');
+  const dm=Math.floor(video.duration/60).toString().padStart(2,'0');
+  const ds=Math.floor(video.duration%60).toString().padStart(2,'0');
+  timeDisplay.textContent = m+":"+s+" / "+dm+":"+ds;
+});
+
+// Download Logic
+downloadBtn.onclick = function(){
+  const a = document.createElement('a');
+  a.href = mediaLink;
+  a.download='';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
 </script>
+
 </body>
 </html>
