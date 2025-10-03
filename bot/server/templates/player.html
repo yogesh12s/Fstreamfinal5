@@ -2,170 +2,158 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Media Player - Netflix Style</title>
+<title>Netflix-Style Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <style>
-  /* Reset & body */
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; background:#000; color:#fff; min-height:100vh; display:flex; flex-direction:column; }
+  /* Reset & Base */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; font-family: 'Arial', sans-serif; color: #fff; }
 
-  /* Preloader */
-  #preloader { position:fixed; inset:0; background:#000; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:2000; transition:opacity 0.5s ease; }
-  #preloader.fade-out { opacity:0; pointer-events:none; }
-  #spinner { width:50px; height:50px; border:5px solid #fff; border-top:5px solid #ff0000; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:15px; }
-  @keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg); } }
+  /* Player Container */
+  .player-container { display: flex; flex-direction: column; min-height: 100vh; }
 
   /* Video Section */
-  .video-container { position:relative; width:100%; max-width:1200px; margin:auto; flex:1; background:#000; }
-  video { width:100%; height:auto; display:block; background:#000; }
+  .video-section { position: relative; flex: 1; background: #000; display: flex; justify-content: center; align-items: center; }
+  video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+
+  /* Overlay Controls */
+  .overlay-controls {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .top-controls, .bottom-controls { display: flex; align-items: center; padding: 10px; pointer-events: auto; }
+  .top-controls { justify-content: flex-start; gap: 10px; }
+  .bottom-controls { justify-content: space-between; background: rgba(0,0,0,0.6); }
+
+  .control-btn { font-size: 20px; cursor: pointer; transition: 0.3s; }
+  .control-btn:hover { color: #ff0000; }
+
+  /* Progress Bar */
+  .progress-container { flex: 1; height: 5px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 10px; cursor: pointer; position: relative; }
+  .progress { width: 0%; height: 100%; background: #ff0000; border-radius: 2px; }
+
+  /* Time Display */
+  .time-display { font-size: 14px; white-space: nowrap; }
 
   /* Big Play Button */
-  #big-play { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:70px; background:rgba(0,0,0,0.5); padding:20px; border-radius:50%; cursor:pointer; z-index:1000; transition:0.3s; }
-  #big-play:hover { background:rgba(255,255,255,0.7); color:#000; }
+  #big-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 70px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 50%; cursor: pointer; z-index: 10; transition: 0.3s; pointer-events: auto; }
+  #big-play:hover { background: rgba(255,255,255,0.7); color:black; }
 
-  /* Control Bar */
-  .control-bar { position:absolute; bottom:10px; left:0; right:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; padding:10px 15px; z-index:1000; border-radius:5px; margin:0 20px; }
-  .control-bar i { font-size:20px; margin-right:15px; cursor:pointer; }
-  .progress-container { flex:1; height:6px; background:rgba(255,255,255,0.3); border-radius:3px; cursor:pointer; position:relative; }
-  .progress { width:0%; height:100%; background:#ff0000; border-radius:3px; }
-  #time-display { margin-left:10px; font-size:14px; }
+  /* Download Button */
+  .download-btn { background: #ff0000; padding: 10px 20px; border-radius: 5px; cursor: pointer; text-decoration: none; color: #fff; font-weight: bold; transition: 0.3s; }
+  .download-btn:hover { background: #e60000; }
 
-  /* Watermark */
-  .watermark { position:absolute; top:15px; right:15px; width:80px; opacity:0.6; z-index:1000; pointer-events:none; }
-
-  /* Comments & download section */
-  .bottom-section { max-width:1200px; margin:20px auto; padding:15px; background:#111; border-radius:10px; }
-  .download-btn { background:#ff0000; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; font-size:16px; margin-bottom:15px; }
-  .download-btn:hover { opacity:0.8; }
-  .comments { max-height:300px; overflow-y:auto; background:#222; padding:15px; border-radius:5px; }
-  .comment { margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px; }
-  .comment-user { font-weight:bold; color:#ff0000; }
-  .comment-text { font-size:14px; color:#ccc; }
-
-  /* Toast Notification */
-  #toast { position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.8); color:#fff; padding:12px 18px; border-radius:8px; font-size:14px; opacity:0; pointer-events:none; transition:opacity 0.5s ease; z-index:3000; }
-  #toast.show { opacity:1; }
+  /* Comments Section */
+  .comments-section { background: #111; padding: 20px; max-height: 300px; overflow-y: auto; }
+  .comments-section h3 { margin-bottom: 10px; }
+  .comment { border-bottom: 1px solid #222; padding: 10px 0; }
+  .comment:last-child { border-bottom: none; }
 
   /* Responsive */
   @media(max-width:768px){
-    #big-play{ font-size:50px; padding:15px; }
-    .control-bar i{ font-size:16px; margin-right:10px; }
-    .watermark{ width:60px; }
+    #big-play { font-size:50px; padding:15px; }
+    .control-btn { font-size:16px; }
+    .download-btn { padding:8px 16px; font-size:14px; }
   }
 </style>
 </head>
 <body>
 
-<!-- Preloader -->
-<div id="preloader">
-  <div id="spinner"></div>
-  <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo" style="width:150px;">
-</div>
+<div class="player-container">
+  <!-- Video Section -->
+  <div class="video-section">
+    <video id="video-player" preload="metadata"></video>
 
-<!-- Video Player Section -->
-<div class="video-container">
-  <video id="video-player" preload="auto"></video>
-  <img class="watermark" src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo">
+    <div class="overlay-controls">
+      <div class="top-controls">
+        <i class="fas fa-volume-up control-btn" id="volume-btn"></i>
+        <i class="fas fa-expand control-btn" id="fullscreen-btn"></i>
+      </div>
 
-  <!-- Big Play Button -->
-  <div id="big-play"><i class="fas fa-play"></i></div>
-
-  <!-- Control Bar -->
-  <div class="control-bar">
-    <i id="btn-play" class="fas fa-play"></i>
-    <div class="progress-container">
-      <div class="progress"></div>
+      <div class="bottom-controls">
+        <i class="fas fa-play control-btn" id="play-btn"></i>
+        <div class="progress-container" id="progress-container">
+          <div class="progress" id="progress"></div>
+        </div>
+        <span class="time-display" id="time-display">00:00 / 00:00</span>
+        <a href="#" class="download-btn" id="download-btn">Download</a>
+      </div>
     </div>
-    <span id="time-display">00:00 / 00:00</span>
-    <i id="btn-volume" class="fas fa-volume-up"></i>
-    <i id="btn-fullscreen" class="fas fa-expand"></i>
-    <i id="btn-download" class="fas fa-download"></i>
+
+    <div id="big-play"><i class="fas fa-play"></i></div>
+  </div>
+
+  <!-- Comments Section -->
+  <div class="comments-section">
+    <h3>Comments</h3>
+    <div class="comment">User1: Awesome video!</div>
+    <div class="comment">User2: Really cool content.</div>
+    <div class="comment">User3: Loving the interface!</div>
   </div>
 </div>
-
-<!-- Bottom Section -->
-<div class="bottom-section">
-  <button class="download-btn" id="download-main">Download Video</button>
-  <div class="comments">
-    <div class="comment"><span class="comment-user">User1:</span> <span class="comment-text">Awesome video!</span></div>
-    <div class="comment"><span class="comment-user">User2:</span> <span class="comment-text">Loved the clarity.</span></div>
-    <!-- More comments dynamically here -->
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast">You can download this video</div>
 
 <script>
-var mediaLink = "{{ mediaLink }}"; // Replace with your media URL
+  const mediaLink = "{{ mediaLink }}"; // Replace with your media URL
+  const video = document.getElementById('video-player');
+  const playBtn = document.getElementById('play-btn');
+  const bigPlay = document.getElementById('big-play');
+  const progress = document.getElementById('progress');
+  const progressContainer = document.getElementById('progress-container');
+  const timeDisplay = document.getElementById('time-display');
+  const volumeBtn = document.getElementById('volume-btn');
+  const fullscreenBtn = document.getElementById('fullscreen-btn');
+  const downloadBtn = document.getElementById('download-btn');
 
-const video = document.getElementById('video-player');
-const bigPlay = document.getElementById('big-play');
-const btnPlay = document.getElementById('btn-play');
-const btnVolume = document.getElementById('btn-volume');
-const btnFullscreen = document.getElementById('btn-fullscreen');
-const btnDownload = document.getElementById('btn-download');
-const downloadMain = document.getElementById('download-main');
-const progressContainer = document.querySelector('.progress-container');
-const progress = document.querySelector('.progress');
-const timeDisplay = document.getElementById('time-display');
-const toast = document.getElementById('toast');
-const preloader = document.getElementById('preloader');
+  if(!mediaLink){
+    alert("Error: Media URL not provided");
+  } else {
+    video.src = mediaLink;
+    downloadBtn.href = mediaLink;
+    downloadBtn.download = '';
 
-if(!mediaLink){
-  alert('Media URL not provided');
-} else {
-  video.src = mediaLink;
+    // Play/Pause
+    function togglePlay(){
+      if(video.paused){ video.play(); playBtn.className='fas fa-pause control-btn'; bigPlay.style.display='none'; }
+      else { video.pause(); playBtn.className='fas fa-play control-btn'; bigPlay.style.display='block'; }
+    }
+    playBtn.onclick = togglePlay;
+    bigPlay.onclick = togglePlay;
+    video.addEventListener('play', ()=>{ playBtn.className='fas fa-pause control-btn'; bigPlay.style.display='none'; });
+    video.addEventListener('pause', ()=>{ playBtn.className='fas fa-play control-btn'; bigPlay.style.display='block'; });
 
-  // Preloader fade out
-  video.addEventListener("canplaythrough", ()=>{ setTimeout(()=>preloader.classList.add('fade-out'),500); });
+    // Progress bar
+    video.addEventListener('timeupdate', ()=>{
+      const percent = (video.currentTime / video.duration)*100;
+      progress.style.width = percent+'%';
+      const format = t=>{ let m=Math.floor(t/60).toString().padStart(2,'0'); let s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; };
+      timeDisplay.textContent = format(video.currentTime)+' / '+format(video.duration);
+    });
 
-  // Big Play Button
-  bigPlay.onclick = () => { video.play(); bigPlay.style.display='none'; btnPlay.className='fas fa-pause'; };
-  video.addEventListener('play', ()=>{ bigPlay.style.display='none'; });
-  video.addEventListener('pause', ()=>{ btnPlay.className='fas fa-play'; });
+    let isDragging = false;
+    function setProgress(e){
+      const rect = progressContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pos = Math.min(Math.max(0,x/rect.width),1);
+      video.currentTime = pos * video.duration;
+    }
+    progressContainer.addEventListener('mousedown', e=>{ isDragging=true; setProgress(e); video.pause(); });
+    progressContainer.addEventListener('mousemove', e=>{ if(isDragging) setProgress(e); });
+    progressContainer.addEventListener('mouseup', e=>{ if(isDragging){ setProgress(e); isDragging=false; video.play(); } });
 
-  // Play/Pause
-  btnPlay.onclick = () => { if(video.paused){ video.play(); btnPlay.className='fas fa-pause'; } else{ video.pause(); btnPlay.className='fas fa-play'; } };
+    // Volume
+    volumeBtn.onclick = ()=>{ video.muted = !video.muted; volumeBtn.className = video.muted?'fas fa-volume-mute control-btn':'fas fa-volume-up control-btn'; };
 
-  // Volume
-  btnVolume.onclick = () => { video.muted = !video.muted; btnVolume.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up'; };
-
-  // Fullscreen
-  btnFullscreen.onclick = () => {
-    if(!document.fullscreenElement){ video.parentElement.requestFullscreen(); btnFullscreen.className='fas fa-compress'; }
-    else{ document.exitFullscreen(); btnFullscreen.className='fas fa-expand'; }
-  };
-
-  // Download
-  function downloadVideo(url){
-    const a = document.createElement('a'); a.href=url; a.download=''; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),3000);
+    // Fullscreen
+    fullscreenBtn.onclick = ()=>{
+      if(!document.fullscreenElement) video.parentElement.requestFullscreen();
+      else document.exitFullscreen();
+    };
   }
-  btnDownload.onclick = ()=>downloadVideo(mediaLink);
-  downloadMain.onclick = ()=>downloadVideo(mediaLink);
-
-  // Progress Bar
-  let isDragging = false;
-  function updateProgress(e){
-    const rect = progressContainer.getBoundingClientRect();
-    const clientX = e.clientX ?? (e.touches ? e.touches[0].clientX : 0);
-    const pos = Math.min(Math.max(0, clientX - rect.left), rect.width) / rect.width;
-    video.currentTime = pos * video.duration;
-  }
-  progressContainer.addEventListener('pointerdown', e=>{ isDragging=true; updateProgress(e); video.pause(); progressContainer.setPointerCapture(e.pointerId); });
-  progressContainer.addEventListener('pointermove', e=>{ if(isDragging) updateProgress(e); });
-  progressContainer.addEventListener('pointerup', e=>{ if(isDragging){ updateProgress(e); isDragging=false; video.play(); } });
-
-  video.addEventListener('timeupdate', ()=>{
-    if(!isDragging) progress.style.width = (video.currentTime / video.duration) * 100 + '%';
-    function formatTime(t){ const m=Math.floor(t/60).toString().padStart(2,'0'); const s=Math.floor(t%60).toString().padStart(2,'0'); return m+':'+s; }
-    timeDisplay.textContent = formatTime(video.currentTime)+' / '+formatTime(video.duration);
-  });
-}
 </script>
-
 </body>
 </html>
