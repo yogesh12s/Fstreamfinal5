@@ -33,7 +33,7 @@
   @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
   #preloader.fade-out { opacity: 0; pointer-events: none; transition: opacity 1s; }
 
-  /* Video Player */
+  /* Player */
   .player-container {
     position: relative;
     width: 100%;
@@ -53,7 +53,7 @@
     pointer-events: none;
   }
 
-  /* Bottom section */
+  /* Bottom Section */
   .bottom-section {
     padding: 20px;
   }
@@ -72,44 +72,41 @@
     background: #cc0000;
   }
 
-  /* Movie Suggestions */
+  /* Suggestions Grid */
   .suggestions {
     margin-top: 30px;
   }
   .suggestions h2 {
-    font-size: 20px;
-    margin-bottom: 15px;
+    font-size: 22px;
+    margin-bottom: 20px;
   }
-  .movies-row {
-    display: flex;
-    gap: 15px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-  }
-  .movies-row::-webkit-scrollbar {
-    height: 8px;
-  }
-  .movies-row::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 4px;
+  .movies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 18px;
   }
   .movie-card {
-    flex: 0 0 auto;
-    width: 150px;
     cursor: pointer;
     transition: transform 0.3s;
   }
   .movie-card:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
   .movie-card img {
     width: 100%;
-    border-radius: 6px;
+    border-radius: 8px;
     display: block;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  }
+  .movie-title {
+    margin-top: 8px;
+    font-size: 14px;
+    text-align: center;
+    color: #ccc;
   }
 
   @media(max-width:768px){
-    .movie-card { width: 120px; }
+    .movie-title { font-size: 12px; }
     .download-btn { font-size: 14px; padding: 10px 16px; }
   }
 </style>
@@ -131,24 +128,33 @@
 <div class="bottom-section">
   <a id="download-btn" class="download-btn">⬇ Download</a>
 
-  <!-- Movie Suggestions -->
+  <!-- Movie Suggestions Grid -->
   <div class="suggestions">
     <h2>More Like This</h2>
-    <div class="movies-row">
+    <div class="movies-grid">
+      <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
+        <img src="https://image.tmdb.org/t/p/w300/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg" alt="Avengers: Endgame">
+        <div class="movie-title">Avengers: Endgame</div>
+      </div>
       <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
         <img src="https://image.tmdb.org/t/p/w300/9O1Iy9od7AYXwHuA4h8k3tSd1Fo.jpg" alt="Inception">
+        <div class="movie-title">Inception</div>
       </div>
       <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
         <img src="https://image.tmdb.org/t/p/w300/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg" alt="The Godfather">
+        <div class="movie-title">The Godfather</div>
       </div>
       <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
         <img src="https://image.tmdb.org/t/p/w300/8uO0gUM8aNqYLs1OsTBQiXu0fEv.jpg" alt="Fight Club">
+        <div class="movie-title">Fight Club</div>
       </div>
       <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
-        <img src="https://image.tmdb.org/t/p/w300/yDbyvtzR2zjhs6zXQDg3R0p1J3P.jpg" alt="Avatar">
+        <img src="https://image.tmdb.org/t/p/w300/ctOEhQiFIHWkiaYp7b0ibSTe5IL.jpg" alt="Avatar">
+        <div class="movie-title">Avatar</div>
       </div>
       <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
-        <img src="https://image.tmdb.org/t/p/w300/d4KNaTrltq6bpkFS01pYtyXa09m.jpg" alt="Interstellar">
+        <img src="https://image.tmdb.org/t/p/w300/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg" alt="Interstellar">
+        <div class="movie-title">Interstellar</div>
       </div>
     </div>
   </div>
