@@ -1,177 +1,398 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Netflix Style Player</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Netflix-style UI — Play Files</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    /* ---------------- Reset / base ---------------- */
+    :root{
+      --bg: #0b0b0b;
+      --card: #141414;
+      --muted: #8b8b8b;
+      --accent: #e50914; /* netflix red */
+      --glass: rgba(255,255,255,0.03);
+      --glass-strong: rgba(0,0,0,0.6);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#060606 0%, #070707 60%);color:#fff;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+    a{color:inherit;text-decoration:none}
 
-<style>
-  html, body {
-    margin:0; height:100%; background:#000;
-    font-family: Arial, sans-serif;
-    overflow:hidden;
-  }
-  #player-container {
-    position: relative;
-    width:100%; height:100%;
-    background:black;
-  }
-  #stream-media { 
-    width:100%; height:100%;
-    object-fit:cover;
-    background:black;
-    display:block;
-  }
+    /* ---------------- Header ---------------- */
+    header.site-header{position:fixed;top:0;left:0;right:0;height:72px;display:flex;align-items:center;justify-content:space-between;padding:12px 28px;z-index:999;backdrop-filter: blur(6px);background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.15));}
+    .brand{display:flex;align-items:center;gap:18px}
+    .brand .logo{height:36px;font-weight:800;color:var(--accent);font-size:20px}
+    nav.header-nav{display:flex;gap:16px;align-items:center;margin-left:8px}
+    nav.header-nav a{color:#ddd;font-size:14px;padding:8px;border-radius:4px}
+    nav.header-nav a:hover{color:white}
 
-  /* Logo top-left */
-  .player-logo {
-    position: absolute;
-    top: 20px; left: 20px;
-    height: 40px;
-    z-index: 1000;
-  }
+    .header-actions{display:flex;align-items:center;gap:12px}
+    .search {position:relative}
+    .search input{width:40px;transition:width .25s ease;padding:8px 10px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.07);color:#fff}
+    .search input:focus{width:220px;outline:none;background:rgba(255,255,255,0.03)}
+    .profile{display:flex;align-items:center;gap:10px}
+    .avatar{width:36px;height:36px;border-radius:4px;background:linear-gradient(135deg,#444,#222);display:flex;align-items:center;justify-content:center;font-weight:700}
 
-  /* Big Play Button */
-  #big-play {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 80px;
-    color: white;
-    background: rgba(0,0,0,0.6);
-    border-radius: 50%;
-    padding: 28px;
-    cursor: pointer;
-    z-index: 1500;
-    transition: 0.3s;
-  }
-  #big-play:hover { background: rgba(229,9,20,0.9); }
+    /* ---------------- Hero ---------------- */
+    .hero{height:68vh;min-height:420px;display:flex;align-items:flex-end;padding:60px 6vw 40px;position:relative;overflow:hidden}
+    .hero .bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.45) blur(0.6px);transform:scale(1.02);}
+    .hero .overlay{position:absolute;inset:0;background:linear-gradient(180deg, transparent 20%, rgba(0,0,0,0.8) 80%)}
+    .hero .meta{position:relative;z-index:3;max-width:760px}
+    .hero h1{font-size:44px;margin:0 0 10px}
+    .hero p{color:var(--muted);max-width:60%;line-height:1.4}
+    .hero .cta{margin-top:18px;display:flex;gap:12px}
+    .btn{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:6px;font-weight:600;border:0;cursor:pointer}
+    .btn.play{background:var(--accent);color:white}
+    .btn.info{background:rgba(255,255,255,0.12);color:white}
 
-  /* Control Bar */
-  #control-bar {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.8));
-    display: flex;
-    align-items: center;
-    padding: 15px 20px;
-    z-index: 1000;
-    opacity:0;
-    transition: opacity 0.4s;
-  }
-  #player-container:hover #control-bar { opacity:1; }
+    /* ---------------- Rows ---------------- */
+    .rows{padding:18px 36px 80px}
+    .row{margin-bottom:22px}
+    .row h3{margin:6px 6px 12px;font-size:18px}
+    .row .slider{position:relative}
+    .row .list{display:flex;gap:12px;overflow-x:auto;padding:12px 6px 12px 6px;scroll-behavior:smooth}
+    .row .card{min-width:170px;width:170px;height:100px;background:linear-gradient(180deg,#222,#111);border-radius:6px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer}
+    .row .card img{width:100%;height:100%;object-fit:cover;display:block}
+    .row .card .title{position:absolute;left:8px;right:8px;bottom:8px;font-size:13px;background:linear-gradient(180deg,transparent,#000000cc);padding:6px;border-radius:4px}
 
-  #control-bar i {
-    color: white;
-    font-size: 22px;
-    cursor: pointer;
-    margin-right: 20px;
-    transition: 0.2s;
-  }
-  #control-bar i:hover { color: #e50914; }
+    /* Hover / preview style */
+    .row .card:hover{transform:scale(1.18);z-index:30;transition:transform .18s ease}
+    .preview{position:absolute;left:0;top:-210px;width:360px;height:210px;background:#0b0b0b;border-radius:8px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.7);display:none}
+    .preview video{width:100%;height:100%;object-fit:cover}
+    .preview .info{position:absolute;left:12px;bottom:10px;color:#fff}
 
-  #progress-container {
-    flex: 1;
-    height: 5px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 3px;
-    cursor: pointer;
-    margin: 0 15px;
-    position: relative;
-  }
-  #progress {
-    height: 5px;
-    background: #e50914;
-    width: 0%;
-    border-radius: 3px;
-  }
+    /* slider arrows */
+    .nav-arrow{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:72px;background:linear-gradient(90deg, rgba(0,0,0,0.35), transparent);border-radius:6px;display:flex;align-items:center;justify-content:center;z-index:50;cursor:pointer}
+    .nav-arrow.left{left:6px}
+    .nav-arrow.right{right:6px}
 
-  #time-display {
-    color:white;
-    font-size:14px;
-    white-space: nowrap;
-  }
+    /* ---------------- Player Modal ---------------- */
+    .player-modal{position:fixed;inset:0;display:none;z-index:2000;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(0,0,0,0.85),rgba(0,0,0,0.95));}
+    .player-wrap{width:88vw;max-width:1280px;background:transparent;border-radius:10px;overflow:hidden}
+    .player-wrap video{width:100%;height:calc(56vw);max-height:72vh;background:black}
+    .player-ui{position:relative}
 
-  @media(max-width:768px){
-    .player-logo { height: 28px; }
-    #big-play { font-size:55px; padding:20px; }
-    #control-bar i { font-size:18px; margin-right:12px; }
-  }
-</style>
+    /* custom control bar inside modal (simple) */
+    .controls{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,transparent,#00000066)}
+    .controls .prog{flex:1;height:6px;background:rgba(255,255,255,0.15);border-radius:6px;overflow:hidden}
+    .controls .prog > i{display:block;height:100%;background:var(--accent);width:0%}
+    .icon-btn{background:rgba(255,255,255,0.06);padding:8px;border-radius:6px}
+
+    /* small utilities */
+    .badge{padding:6px 10px;border-radius:20px;background:rgba(0,0,0,0.45);font-weight:600}
+
+    /* ---------------- Responsive / mobile ---------------- */
+    @media (max-width:900px){
+      .hero{padding:40px 6vw 30px}
+      .hero h1{font-size:28px}
+      .hero p{max-width:100%}
+      .row .card{min-width:120px;width:120px;height:70px}
+      .preview{display:none}
+      .player-wrap{width:98vw}
+      header.site-header{padding:8px 14px}
+    }
+
+    @media (max-width:480px){
+      header.site-header{height:64px}
+      .brand .logo{font-size:18px}
+      .search input{display:none}
+      .header-nav{display:none}
+    }
+
+    /* make scrollbars thin and dark */
+    ::-webkit-scrollbar{height:8px;width:8px}
+    ::-webkit-scrollbar-thumb{background:#222;border-radius:10px}
+  </style>
 </head>
 <body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="logo">ChadStreamz</div>
+      <nav class="header-nav" aria-label="main navigation">
+        <a href="#">Home</a>
+        <a href="#">TV Shows</a>
+        <a href="#">Movies</a>
+        <a href="#">New & Popular</a>
+      </nav>
+    </div>
 
-<div id="player-container">
-  <!-- Replace logo with yours -->
-  <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo" class="player-logo">
+    <div class="header-actions">
+      <div class="search" title="Search">
+        <input type="search" id="global-search" placeholder="Search" aria-label="Search" />
+      </div>
+      <div class="profile" role="navigation" aria-label="profile">
+        <div class="badge" id="watchlist-count">0</div>
+        <div class="avatar" id="profile-avatar">Y</div>
+      </div>
+    </div>
+  </header>
 
-  <video id="stream-media" preload="auto"></video>
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="bg" id="hero-bg" style="background-image:url('https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?q=80&w=1920&auto=format&fit=crop&ixlib=rb-4.0.3&s=')"></div>
+    <div class="overlay"></div>
+    <div class="meta">
+      <h1 id="hero-title">Featured: The Amazing Stream</h1>
+      <p id="hero-desc">A crisp cinematic experience with dynamic storytelling. Hover any card to preview, click PLAY to open the player. Designed to look & feel like modern streaming UIs.</p>
+      <div class="cta">
+        <button class="btn play" id="hero-play"><i class="fa-solid fa-play"></i> Play</button>
+        <button class="btn info" id="hero-more"><i class="fa-solid fa-circle-info"></i> More Info</button>
+      </div>
+    </div>
+  </section>
 
-  <!-- Big Play -->
-  <div id="big-play"><i class="fas fa-play"></i></div>
+  <!-- ROWS -->
+  <main class="rows" id="rows">
+    <!-- rows are rendered by JS -->
+  </main>
 
-  <!-- Controls -->
-  <div id="control-bar">
-    <i id="play-btn" class="fas fa-play"></i>
-    <div id="progress-container"><div id="progress"></div></div>
-    <span id="time-display">00:00 / 00:00</span>
-    <i id="volume-btn" class="fas fa-volume-up"></i>
-    <i id="fullscreen-btn" class="fas fa-expand"></i>
+  <!-- Player modal -->
+  <div class="player-modal" id="player-modal" role="dialog" aria-modal="true">
+    <div class="player-wrap" id="player-wrap">
+      <div class="player-ui">
+        <video id="main-player" controls playsinline preload="metadata"></video>
+        <div class="controls" id="player-controls">
+          <button class="icon-btn" id="p-toggle"><i class="fa-solid fa-play"></i></button>
+          <div class="prog"><i id="prog-fill"></i></div>
+          <div class="icon-btn" id="p-mute"><i class="fa-solid fa-volume-high"></i></div>
+          <div class="icon-btn" id="p-full"><i class="fa-solid fa-expand"></i></div>
+          <div class="icon-btn" id="p-cc" title="Captions"><i class="fa-solid fa-closed-captioning"></i></div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
-<script>
-var mediaLink = "{{ mediaLink }}"; // replace with your media link
-var video = document.getElementById('stream-media');
-var bigPlay = document.getElementById("big-play");
-var playBtn = document.getElementById("play-btn");
-var volumeBtn = document.getElementById("volume-btn");
-var fullscreenBtn = document.getElementById("fullscreen-btn");
-var progress = document.getElementById("progress");
-var progressContainer = document.getElementById("progress-container");
-var timeDisplay = document.getElementById("time-display");
+  <template id="row-template">
+    <section class="row">
+      <h3></h3>
+      <div class="slider">
+        <div class="nav-arrow left"><i class="fa-solid fa-chevron-left"></i></div>
+        <div class="nav-arrow right"><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="list"></div>
+      </div>
+    </section>
+  </template>
 
-if(mediaLink){ video.src = mediaLink; }
-else { document.body.innerHTML="<h2 style='color:red;text-align:center;margin-top:20px;'>Error: Media URL not provided</h2>"; }
+  <template id="card-template">
+    <div class="card" tabindex="0">
+      <img alt="poster">
+      <div class="title"></div>
+    </div>
+  </template>
 
-// Big play button
-bigPlay.onclick = ()=>{ video.play(); bigPlay.style.display="none"; playBtn.className="fas fa-pause"; };
+  <template id="preview-template">
+    <div class="preview">
+      <video muted loop playsinline></video>
+      <div class="info">
+        <strong class="pv-title"></strong>
+      </div>
+    </div>
+  </template>
 
-// Toggle play/pause
-playBtn.onclick = ()=>{
-  if(video.paused){ video.play(); playBtn.className="fas fa-pause"; }
-  else { video.pause(); playBtn.className="fas fa-play"; }
-};
-video.addEventListener("play", ()=>{ bigPlay.style.display="none"; playBtn.className="fas fa-pause"; });
-video.addEventListener("pause", ()=>{ playBtn.className="fas fa-play"; });
+  <script>
+    /* ---------------- Sample data ---------------- */
+    // Replace the sample media urls with your real media links. Each item can have preview and fullVideo.
+    const rowsData = [
+      {title: 'Trending Now', items: [
+        {id:1,title:'Sea of Stars',poster:'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+        {id:2,title:'Midnight Run',poster:'https://images.unsplash.com/photo-1505682634904-d7c95d4a2f62?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+        {id:3,title:'Skyline',poster:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+        {id:4,title:'Last Light',poster:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+      ]},
 
-// Volume toggle
-volumeBtn.onclick = ()=>{
-  video.muted = !video.muted;
-  volumeBtn.className = video.muted ? "fas fa-volume-mute" : "fas fa-volume-up";
-};
+      {title: 'New Releases', items: [
+        {id:11,title:'Breaking Waves',poster:'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+        {id:12,title:'Hidden Cities',poster:'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+        {id:13,title:'Echoes',poster:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+      ]},
 
-// Fullscreen toggle
-fullscreenBtn.onclick = ()=>{
-  if(!document.fullscreenElement){ video.requestFullscreen(); fullscreenBtn.className="fas fa-compress"; }
-  else { document.exitFullscreen(); fullscreenBtn.className="fas fa-expand"; }
-};
+      {title: 'Because you watched', items: [
+        {id:21,title:'Night Drive',poster:'https://images.unsplash.com/photo-1482192505345-5655af888cc4?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+        {id:22,title:'Wandering',poster:'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=', preview:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', fullVideo:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'},
+      ]}
+    ];
 
-// Progress bar
-video.addEventListener("timeupdate", ()=>{
-  if(video.duration){
-    progress.style.width = (video.currentTime / video.duration) * 100 + '%';
-    let m = (t)=>String(Math.floor(t/60)).padStart(2,'0');
-    let s = (t)=>String(Math.floor(t%60)).padStart(2,'0');
-    timeDisplay.textContent = m(video.currentTime)+":"+s(video.currentTime)+" / "+m(video.duration)+":"+s(video.duration);
-  }
-});
-progressContainer.onclick = (e)=>{
-  let rect = progressContainer.getBoundingClientRect();
-  let pos = (e.clientX - rect.left) / rect.width;
-  video.currentTime = pos * video.duration;
-};
-</script>
+    // small util
+    const $ = sel => document.querySelector(sel);
+
+    /* ---------------- Render rows & cards ---------------- */
+    function makeRows(){
+      const rowsEl = $('#rows');
+      const tmpl = document.getElementById('row-template');
+      const cardT = document.getElementById('card-template');
+      const prevT = document.getElementById('preview-template');
+
+      rowsData.forEach((r,ri) => {
+        const clone = tmpl.content.cloneNode(true);
+        const section = clone.querySelector('.row');
+        section.querySelector('h3').textContent = r.title;
+        const list = section.querySelector('.list');
+
+        r.items.forEach(it => {
+          const card = cardT.content.cloneNode(true).querySelector('.card');
+          card.dataset.id = it.id;
+          const img = card.querySelector('img'); img.src = it.poster; img.alt = it.title;
+          card.querySelector('.title').textContent = it.title;
+
+          // store dataset for usage
+          card.dataset.preview = it.preview || '';
+          card.dataset.full = it.fullVideo || '';
+
+          // preview element
+          const preview = prevT.content.cloneNode(true).querySelector('.preview');
+          const pvVideo = preview.querySelector('video');
+          preview.querySelector('.pv-title').textContent = it.title;
+          if(it.preview){ pvVideo.src = it.preview; }
+
+          // events: hover to show preview (desktop), click to open player
+          card.addEventListener('mouseenter', (e)=>{
+            if(window.innerWidth < 900) return; // disable hover on small
+            document.body.appendChild(preview);
+            preview.style.display = 'block';
+            const rect = card.getBoundingClientRect();
+            preview.style.left = Math.max(8, rect.left - 100)+'px';
+            preview.style.top = (rect.top - 220)+'px';
+            pvVideo.currentTime = 0; pvVideo.muted = true; pvVideo.play().catch(()=>{});
+          });
+          card.addEventListener('mouseleave', ()=>{ pvVideo.pause(); preview.remove(); });
+
+          card.addEventListener('click', ()=>{
+            openPlayer(card.dataset.full || card.dataset.preview, it.title, it.poster);
+          });
+
+          card.addEventListener('keydown', (ev) => { if(ev.key === 'Enter') card.click(); });
+
+          list.appendChild(card);
+        });
+
+        // arrow controls
+        const left = section.querySelector('.nav-arrow.left');
+        const right = section.querySelector('.nav-arrow.right');
+        right.addEventListener('click', () => list.scrollBy({left: 560, behavior:'smooth'}));
+        left.addEventListener('click', () => list.scrollBy({left: -560, behavior:'smooth'}));
+
+        rowsEl.appendChild(section);
+      });
+    }
+
+    makeRows();
+
+    /* ---------------- Player logic ---------------- */
+    const playerModal = $('#player-modal');
+    const mainPlayer = $('#main-player');
+    const progFill = $('#prog-fill');
+    const pToggle = $('#p-toggle');
+    const pMute = $('#p-mute');
+    const pFull = $('#p-full');
+
+    function openPlayer(src,title,poster){
+      if(!src) { alert('No video URL provided for this item.'); return; }
+      playerModal.style.display = 'flex';
+      mainPlayer.src = src;
+      mainPlayer.poster = poster || '';
+      mainPlayer.play().catch(()=>{});
+      pToggle.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      document.body.style.overflow='hidden';
+    }
+
+    function closePlayer(){
+      playerModal.style.display='none';
+      mainPlayer.pause(); mainPlayer.src='';
+      document.body.style.overflow='';
+    }
+
+    // modal close on backdrop click or Escape
+    playerModal.addEventListener('click',(e)=>{ if(e.target === playerModal) closePlayer(); });
+    document.addEventListener('keydown',(e)=>{ if(e.key === 'Escape') closePlayer(); });
+
+    // update progress bar
+    mainPlayer.addEventListener('timeupdate', ()=>{
+      if(mainPlayer.duration){
+        const pct = (mainPlayer.currentTime / mainPlayer.duration) * 100;
+        progFill.style.width = pct + '%';
+      }
+    });
+
+    // play/pause toggle
+    pToggle.addEventListener('click', ()=>{
+      if(mainPlayer.paused){ mainPlayer.play(); pToggle.innerHTML = '<i class="fa-solid fa-pause"></i>'; }
+      else { mainPlayer.pause(); pToggle.innerHTML = '<i class="fa-solid fa-play"></i>'; }
+    });
+
+    // mute toggle
+    pMute.addEventListener('click', ()=>{
+      mainPlayer.muted = !mainPlayer.muted;
+      pMute.innerHTML = mainPlayer.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+    });
+
+    // fullscreen
+    pFull.addEventListener('click', async ()=>{
+      try{
+        if(!document.fullscreenElement){ await document.getElementById('player-wrap').requestFullscreen(); pFull.innerHTML='<i class="fa-solid fa-compress"></i>'; }
+        else { await document.exitFullscreen(); pFull.innerHTML='<i class="fa-solid fa-expand"></i>'; }
+      }catch(err){ console.warn(err); }
+    });
+
+    // clicking hero play
+    $('#hero-play').addEventListener('click', ()=>{
+      const first = rowsData[0]?.items?.[0];
+      openPlayer(first.fullVideo || first.preview, first.title, first.poster);
+    });
+
+    /* ---------------- Watchlist (localStorage) ---------------- */
+    const watchKey = 'cs_watchlist_v1';
+    function getWatch(){ try{return JSON.parse(localStorage.getItem(watchKey) || '[]');}catch(e){return []} }
+    function addToWatch(id){ const list=getWatch(); if(!list.includes(id)){ list.push(id); localStorage.setItem(watchKey,JSON.stringify(list)); renderWatchCount(); } }
+    function removeFromWatch(id){ let list=getWatch(); list=list.filter(x=>x!==id); localStorage.setItem(watchKey,JSON.stringify(list)); renderWatchCount(); }
+    function renderWatchCount(){ $('#watchlist-count').textContent = getWatch().length; }
+    renderWatchCount();
+
+    /* ---------------- Search (simple client-side) ---------------- */
+    $('#global-search').addEventListener('input',(e)=>{
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('.row .card').forEach(c=>{
+        const title = c.querySelector('.title').textContent.toLowerCase();
+        c.style.display = title.includes(q) ? '' : 'none';
+      });
+    });
+
+    /* ---------------- Accessibility & keyboard shortcuts ---------------- */
+    // space: play/pause, arrow left/right: seek +-5s, m: mute, f: fullscreen
+    document.addEventListener('keydown',(e)=>{
+      if(playerModal.style.display !== 'flex') return; // only when player open
+      if(e.code === 'Space'){ e.preventDefault(); if(mainPlayer.paused) mainPlayer.play(); else mainPlayer.pause(); }
+      if(e.key === 'm') mainPlayer.muted = !mainPlayer.muted;
+      if(e.key === 'f') document.getElementById('player-wrap').requestFullscreen().catch(()=>{});
+      if(e.key === 'ArrowRight') mainPlayer.currentTime = Math.min(mainPlayer.currentTime + 5, mainPlayer.duration || 0);
+      if(e.key === 'ArrowLeft') mainPlayer.currentTime = Math.max(mainPlayer.currentTime - 5, 0);
+    });
+
+    /* ---------------- Small polish: autoplay previews on load for hero ---------------- */
+    window.addEventListener('load', ()=>{
+      // set hero bg to first poster
+      const first = rowsData[0]?.items?.[0]; if(first){$('#hero-bg').style.backgroundImage = `url(${first.poster})`; $('#hero-title').textContent = first.title; $('#hero-desc').textContent = (first.title + ' — an awesome sample preview.'); }
+
+      // lazy-load images (simple)
+      document.querySelectorAll('.row .card img').forEach(img=>{ const src = img.src; img.src=''; setTimeout(()=>img.src=src, 60); });
+    });
+
+    /* ---------------- Responsive tweaks: show/hide arrows based on width ---------------- */
+    const throttle = (fn, wait=100)=>{ let t=0; return (...a)=>{ const now = Date.now(); if(now - t > wait){ t=now; fn(...a); } } }
+    window.addEventListener('resize', throttle(()=>{
+      document.querySelectorAll('.row .list').forEach(list=>{
+        const parent = list.closest('.row');
+        const left = parent.querySelector('.nav-arrow.left');
+        const right = parent.querySelector('.nav-arrow.right');
+        if(list.scrollWidth <= list.clientWidth + 10){ left.style.display='none'; right.style.display='none'; }
+        else { left.style.display='flex'; right.style.display='flex'; }
+      });
+    },200));
+
+    // initial arrows check
+    setTimeout(()=>{ window.dispatchEvent(new Event('resize')); }, 500);
+
+  </script>
 </body>
 </html>
