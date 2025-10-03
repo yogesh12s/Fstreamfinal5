@@ -4,276 +4,173 @@
 <meta charset="UTF-8">
 <title>ChadStreamz Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
 <style>
   body {
     margin: 0;
     background: #000;
-    font-family: Arial, sans-serif;
     color: #fff;
+    font-family: Arial, sans-serif;
   }
-
-  /* Player container */
-  #player-container {
-    position: relative;
-    width: 100%;
-    background: #000;
-  }
-  video {
-    width: 100%;
-    height: auto;
-    max-height: 70vh;
-    background: #000;
-    display: block;
-  }
-
   /* Preloader */
   #preloader {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    background: #000;
+    background: black;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
-    flex-direction: column;
+    z-index: 2000;
   }
   #spinner {
     width: 48px;
     height: 48px;
     border: 5px solid #fff;
-    border-top: 5px solid red;
+    border-top: 5px solid #ff0000;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  #preloader img {
-    margin-top: 15px;
-    width: 140px;
-    opacity: 0.8;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
-  }
+  @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+  #preloader.fade-out { opacity: 0; pointer-events: none; transition: opacity 1s; }
 
-  /* Watermark */
+  /* Video Player */
+  .player-container {
+    position: relative;
+    width: 100%;
+    background: black;
+  }
+  video {
+    width: 100%;
+    max-height: 70vh;
+    background: black;
+  }
   .watermark {
     position: absolute;
     top: 12px;
     right: 12px;
     width: 80px;
-    opacity: 0.5;
-    z-index: 200;
+    opacity: 0.7;
     pointer-events: none;
   }
 
-  /* Big Play */
-  #big-play {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 64px;
-    color: white;
-    background: rgba(0,0,0,0.5);
-    border-radius: 50%;
-    padding: 18px;
-    cursor: pointer;
-    z-index: 500;
-    transition: 0.3s;
-  }
-  #big-play:hover { background: rgba(255,255,255,0.8); color: black; }
-
-  /* Controls */
-  #controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.9));
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  #player-container:hover #controls,
-  #player-container.touch-active #controls {
-    opacity: 1;
-  }
-  #controls i {
-    font-size: 20px;
-    margin-right: 12px;
-    cursor: pointer;
-  }
-  #progress-container {
-    flex: 1;
-    height: 5px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 3px;
-    cursor: pointer;
-    margin: 0 10px;
-    position: relative;
-  }
-  #progress {
-    height: 5px;
-    background: red;
-    width: 0%;
-    border-radius: 3px;
-  }
-  #time-display {
-    font-size: 14px;
-  }
-
-  /* Download Section */
-  #download-section {
-    text-align: center;
-    padding: 15px;
-    background: #111;
-  }
-  #download-section button {
-    padding: 10px 20px;
-    background: red;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  #download-section button:hover {
-    background: #e50914;
-  }
-
-  /* Suggestions */
-  #suggestions {
+  /* Bottom section */
+  .bottom-section {
     padding: 20px;
   }
-  #suggestions h2 {
-    margin-bottom: 15px;
-    font-size: 20px;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
-    gap: 12px;
-  }
-  .movie {
-    position: relative;
-    cursor: pointer;
-  }
-  .movie img {
-    width: 100%;
+  .download-btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #ff0000;
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: bold;
     border-radius: 6px;
     transition: 0.3s;
   }
-  .movie img:hover {
-    transform: scale(1.05);
+  .download-btn:hover {
+    background: #cc0000;
   }
 
+  /* Movie Suggestions */
+  .suggestions {
+    margin-top: 30px;
+  }
+  .suggestions h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  .movies-row {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+  .movies-row::-webkit-scrollbar {
+    height: 8px;
+  }
+  .movies-row::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+  }
+  .movie-card {
+    flex: 0 0 auto;
+    width: 150px;
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+  .movie-card:hover {
+    transform: scale(1.1);
+  }
+  .movie-card img {
+    width: 100%;
+    border-radius: 6px;
+    display: block;
+  }
+
+  @media(max-width:768px){
+    .movie-card { width: 120px; }
+    .download-btn { font-size: 14px; padding: 10px 16px; }
+  }
 </style>
 </head>
 <body>
 
-<div id="player-container">
-  <!-- Preloader -->
-  <div id="preloader">
-    <div id="spinner"></div>
-    <img src="https://chadstreamz.sbs/assets/images/log2.png" alt="Logo">
-  </div>
-
-  <!-- Video -->
-  <video id="stream-media" preload="auto"></video>
-
-  <!-- Watermark -->
-  <img src="https://chadstreamz.sbs/assets/images/log2.png" class="watermark">
-
-  <!-- Big Play -->
-  <div id="big-play"><i class="fas fa-play"></i></div>
-
-  <!-- Controls -->
-  <div id="controls">
-    <i id="play-btn" class="fas fa-play"></i>
-    <div id="progress-container"><div id="progress"></div></div>
-    <span id="time-display">00:00 / 00:00</span>
-    <i id="mute-btn" class="fas fa-volume-up"></i>
-    <i id="fullscreen-btn" class="fas fa-expand"></i>
-  </div>
+<!-- Preloader -->
+<div id="preloader">
+  <div id="spinner"></div>
 </div>
 
-<!-- Download Button -->
-<div id="download-section">
-  <button id="download-btn"><i class="fas fa-download"></i> Download</button>
+<!-- Player -->
+<div class="player-container">
+  <video id="stream-media" controls preload="auto"></video>
+  <img src="https://chadstreamz.sbs/assets/images/log2.png" class="watermark" alt="Watermark">
 </div>
 
-<!-- Suggestions -->
-<div id="suggestions">
-  <h2>More Movies</h2>
-  <div class="grid">
-    <div class="movie"><img src="https://via.placeholder.com/300x450?text=Movie+1"></div>
-    <div class="movie"><img src="https://via.placeholder.com/300x450?text=Movie+2"></div>
-    <div class="movie"><img src="https://via.placeholder.com/300x450?text=Movie+3"></div>
-    <div class="movie"><img src="https://via.placeholder.com/300x450?text=Movie+4"></div>
+<!-- Bottom Section -->
+<div class="bottom-section">
+  <a id="download-btn" class="download-btn">⬇ Download</a>
+
+  <!-- Movie Suggestions -->
+  <div class="suggestions">
+    <h2>More Like This</h2>
+    <div class="movies-row">
+      <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
+        <img src="https://image.tmdb.org/t/p/w300/9O1Iy9od7AYXwHuA4h8k3tSd1Fo.jpg" alt="Inception">
+      </div>
+      <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
+        <img src="https://image.tmdb.org/t/p/w300/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg" alt="The Godfather">
+      </div>
+      <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
+        <img src="https://image.tmdb.org/t/p/w300/8uO0gUM8aNqYLs1OsTBQiXu0fEv.jpg" alt="Fight Club">
+      </div>
+      <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
+        <img src="https://image.tmdb.org/t/p/w300/yDbyvtzR2zjhs6zXQDg3R0p1J3P.jpg" alt="Avatar">
+      </div>
+      <div class="movie-card" onclick="window.location.href='https://chadstreamz.sbs'">
+        <img src="https://image.tmdb.org/t/p/w300/d4KNaTrltq6bpkFS01pYtyXa09m.jpg" alt="Interstellar">
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-var mediaLink = "{{ mediaLink }}"; // Your media link
-var video = document.getElementById("stream-media");
-var preloader = document.getElementById("preloader");
-var bigPlay = document.getElementById("big-play");
-var playBtn = document.getElementById("play-btn");
-var muteBtn = document.getElementById("mute-btn");
-var fullscreenBtn = document.getElementById("fullscreen-btn");
-var progress = document.getElementById("progress");
-var progressContainer = document.getElementById("progress-container");
-var timeDisplay = document.getElementById("time-display");
-var downloadBtn = document.getElementById("download-btn");
+  var mediaLink = "{{ mediaLink }}"; // replace with your media URL
+  var video = document.getElementById("stream-media");
+  var downloadBtn = document.getElementById("download-btn");
+  var preloader = document.getElementById("preloader");
 
-if(mediaLink){
-  video.src = mediaLink;
-}
+  if(mediaLink){
+    video.src = mediaLink;
+    downloadBtn.href = mediaLink;
+    downloadBtn.setAttribute("download", "");
 
-// Preloader fade-out
-video.addEventListener("canplaythrough", ()=>{ preloader.style.display="none"; });
-
-// Big play
-bigPlay.onclick = ()=>{ video.play(); bigPlay.style.display="none"; playBtn.className="fas fa-pause"; };
-video.addEventListener("play", ()=>{ bigPlay.style.display="none"; playBtn.className="fas fa-pause"; });
-video.addEventListener("pause", ()=>{ playBtn.className="fas fa-play"; });
-
-// Play/pause
-playBtn.onclick = ()=>{ if(video.paused){ video.play(); } else { video.pause(); } };
-
-// Mute
-muteBtn.onclick = ()=>{ video.muted = !video.muted; muteBtn.className = video.muted ? "fas fa-volume-mute" : "fas fa-volume-up"; };
-
-// Fullscreen
-fullscreenBtn.onclick = ()=>{
-  if (!document.fullscreenElement) { video.requestFullscreen(); fullscreenBtn.className="fas fa-compress"; }
-  else { document.exitFullscreen(); fullscreenBtn.className="fas fa-expand"; }
-};
-
-// Progress
-video.addEventListener("timeupdate", ()=>{
-  var percent = (video.currentTime / video.duration) * 100;
-  progress.style.width = percent + "%";
-  function format(t){ var m=Math.floor(t/60).toString().padStart(2,"0"); var s=Math.floor(t%60).toString().padStart(2,"0"); return m+":"+s; }
-  timeDisplay.textContent = format(video.currentTime) + " / " + format(video.duration);
-});
-progressContainer.addEventListener("click", (e)=>{
-  var rect = progressContainer.getBoundingClientRect();
-  var pos = (e.clientX - rect.left) / rect.width;
-  video.currentTime = pos * video.duration;
-});
-
-// Download
-downloadBtn.onclick = ()=>{ var a=document.createElement("a"); a.href=mediaLink; a.download=""; a.click(); };
-
-// Suggestions click
-document.querySelectorAll(".movie").forEach(m=>{
-  m.onclick=()=>{ window.location.href="https://chadstreamz.sbs"; };
-});
+    video.addEventListener("canplaythrough", function(){
+      preloader.classList.add("fade-out");
+    });
+  } else {
+    alert("Error: Media URL not provided");
+  }
 </script>
 </body>
 </html>
