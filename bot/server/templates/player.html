@@ -3,14 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <title>ChadStreamz Player</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/x-icon" href="https://chadstreamz.sbs/favicon.svg"/>
 
 <style>
     /* --- VARIABLES --- */
-    :root { --brand-red: #e50914; }
+    :root {
+        --brand-red: #e50914;
+        --touch-target: 48px;
+    }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
-    body { margin: 0; background-color: #000; color: #fff; font-family: sans-serif; }
+    body { margin: 0; background-color: #000; color: #fff; font-family: -apple-system, system-ui, sans-serif; }
 
     /* --- VIDEO CONTAINER --- */
     .video-container {
@@ -23,7 +26,7 @@
     }
     video.fill-mode { object-fit: cover; }
 
-    /* FORCE LANDSCAPE HACK */
+    /* Landscape Hack */
     .video-container.force-landscape {
         position: fixed; top: 0; left: 0; width: 100vh !important; height: 100vw !important;
         z-index: 9999; transform-origin: top left;
@@ -31,18 +34,9 @@
     }
 
     /* --- LAYERS --- */
-    /* Z-Index Strategy:
-       10: Video
-       20: Watermark
-       30: Tap Feedback
-       40: Bottom Controls (Container)
-       50: Loaders
-       60: Center Buttons (Must be highest to be clickable)
-    */
-    
     .watermark { position: absolute; top: 20px; right: 20px; width: 60px; opacity: 0.7; z-index: 20; pointer-events: none; }
 
-    /* LOADERS */
+    /* Loaders */
     .loader-overlay {
         position: absolute; top: 0; left: 0; right: 0; bottom: 0;
         display: flex; justify-content: center; align-items: center;
@@ -50,94 +44,118 @@
     }
     .loader-overlay.active { opacity: 1; }
     #initialLoader { background: #000; z-index: 70; }
-    #bufferLoader { background: rgba(0,0,0,0.3); }
+    #bufferLoader { background: rgba(0,0,0,0.4); }
 
     .spinner {
         width: 50px; height: 50px; border-radius: 50%;
-        border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--brand-red);
+        border: 4px solid rgba(255,255,255,0.15); border-top-color: var(--brand-red);
         animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* --- CENTER CONTROLS (Top Layer) --- */
+    /* --- CENTER CONTROLS (Z-Index 60 - Top Layer) --- */
     .center-wrapper {
         position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        /* FIX: High Z-index ensures it sits ABOVE the bottom controls gradient */
         z-index: 60; 
-        display: flex; align-items: center; justify-content: center; gap: 40px;
-        pointer-events: none; /* Container passes clicks */
-        opacity: 0; transition: opacity 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 12vw;
+        /* Default: Hidden and NOT clickable */
+        opacity: 0; pointer-events: none; 
+        transition: opacity 0.2s;
     }
-    .center-wrapper.visible { opacity: 1; }
+    
+    /* When Visible: Fully clickable */
+    .center-wrapper.visible { 
+        opacity: 1; 
+        pointer-events: auto; 
+    }
 
-    /* Buttons are clickable */
+    /* Center Buttons */
     .center-main-btn {
         width: 70px; height: 70px;
         display: flex; justify-content: center; align-items: center;
         cursor: pointer; border-radius: 50%;
-        background: rgba(0,0,0,0.4); 
-        transition: transform 0.2s, background 0.2s;
-        backdrop-filter: blur(2px);
-        pointer-events: auto; /* FIX: Explicitly auto */
+        background: rgba(0,0,0,0.5); 
+        backdrop-filter: blur(4px);
+        transition: transform 0.2s;
+        border: 1px solid rgba(255,255,255,0.1);
     }
-    .center-main-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.6); }
-    .center-main-btn svg { width: 36px; height: 36px; fill: #fff; }
+    .center-main-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.7); }
+    .center-main-btn svg { width: 34px; height: 34px; fill: #fff; }
 
     .seek-btn {
         width: 50px; height: 50px;
         display: flex; justify-content: center; align-items: center;
         cursor: pointer; border-radius: 50%;
-        background: rgba(0,0,0,0.3);
+        background: rgba(0,0,0,0.4);
         transition: transform 0.2s;
-        pointer-events: auto; /* FIX: Explicitly auto */
+        backdrop-filter: blur(2px);
     }
-    .seek-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.5); }
-    .seek-btn svg { width: 26px; height: 26px; fill: #fff; }
+    .seek-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.6); }
+    .seek-btn svg { width: 24px; height: 24px; fill: #fff; }
+
+    /* Mobile Portrait Adjust */
+    @media (orientation: portrait) and (max-width: 600px) {
+        .center-wrapper { transform: translate(-50%, -65%); }
+    }
 
     /* --- BOTTOM CONTROLS --- */
     .controls {
         position: absolute; bottom: 0; left: 0; width: 100%;
-        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
         padding: 40px 20px 15px 20px;
-        display: flex; flex-direction: column; gap: 8px; z-index: 40;
+        display: flex; flex-direction: column; gap: 10px; z-index: 40;
         opacity: 0; transform: translateY(10px);
         transition: opacity 0.3s, transform 0.3s;
         
-        /* FIX: Ensure the transparent gradient doesn't block clicks on video center */
+        /* CRITICAL FIX: Base state is NOT clickable. Clicks pass to video. */
         pointer-events: none; 
     }
-    .controls.visible { opacity: 1; transform: translateY(0); }
     
-    /* Re-enable clicks for actual buttons/slider */
-    .progress-box, .btn-row { pointer-events: auto; }
+    .controls.visible { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+
+    /* CRITICAL FIX: Only enable pointer events when the parent .controls has .visible class */
+    .controls.visible .progress-box, 
+    .controls.visible .btn-row { 
+        pointer-events: auto; 
+    }
 
     /* Progress Bar */
-    .progress-box { width: 100%; position: relative; height: 20px; display: flex; align-items: center; cursor: pointer; }
+    .progress-box {
+        width: 100%; position: relative; height: 30px; 
+        display: flex; align-items: center; cursor: pointer; touch-action: none;
+    }
     input[type=range] {
-        width: 100%; -webkit-appearance: none; background: transparent; height: 4px; 
-        border-radius: 2px; background: rgba(255,255,255,0.3);
+        width: 100%; -webkit-appearance: none; background: transparent; 
+        height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3);
     }
     input[type=range]::-webkit-slider-thumb {
-        -webkit-appearance: none; height: 14px; width: 14px;
+        -webkit-appearance: none; height: 16px; width: 16px;
         background: var(--brand-red); border-radius: 50%;
-        margin-top: -5px; box-shadow: 0 0 10px var(--brand-red);
+        margin-top: -6px; box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
     }
 
-    .btn-row { display: flex; justify-content: space-between; align-items: center; }
-    .grp { display: flex; align-items: center; gap: 20px; }
-    button { background: none; border: none; color: #eee; cursor: pointer; padding: 0; }
-    button:hover { color: #fff; transform: scale(1.1); }
+    .btn-row { display: flex; justify-content: space-between; align-items: center; min-height: 40px; }
+    .grp { display: flex; align-items: center; gap: 15px; }
+
+    button {
+        background: none; border: none; color: #eee; cursor: pointer; padding: 0;
+        width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    }
+    button:active { transform: scale(0.9); }
     button svg { width: 28px; height: 28px; fill: currentColor; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
-    .time-txt { font-size: 13px; color: #ddd; font-weight: 500; }
+    .time-txt { font-size: 13px; color: #ddd; font-weight: 500; font-variant-numeric: tabular-nums; }
     .fit-btn.active { color: var(--brand-red); }
 
-    /* --- TAP FEEDBACK --- */
+    /* --- GESTURE ZONES --- */
     .tap-feedback {
         position: absolute; top: 0; bottom: 0; width: 40%;
         display: flex; justify-content: center; align-items: center;
         font-weight: bold; font-size: 18px; z-index: 30; pointer-events: none;
-        opacity: 0; transition: opacity 0.2s;
+        opacity: 0; transition: opacity 0.2s; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
     .tap-left { left: 0; background: linear-gradient(to right, rgba(255,255,255,0.1), transparent); }
     .tap-right { right: 0; background: linear-gradient(to left, rgba(255,255,255,0.1), transparent); }
@@ -146,7 +164,7 @@
 
     /* --- PAGE --- */
     .content { max-width: 1200px; margin: 0 auto; padding: 25px 5%; }
-    .dl-btn { background: #222; color: #fff; padding: 10px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; border: 1px solid #444; }
+    .dl-btn { background: #222; color: #fff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; border: 1px solid #444; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
     .card { border-radius: 8px; overflow: hidden; cursor: pointer; }
     .card img { width: 100%; display: block; aspect-ratio: 2/3; object-fit: cover; }
@@ -239,23 +257,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vid.paused) vid.play(); else vid.pause();
     }
 
-    function updateIcons() {
-        if (vid.paused) {
-            playToggle.innerHTML = svgPlay;
-            centerBtn.innerHTML = svgPlay;
-            centerWrapper.classList.add('visible');
-            ui.classList.add('visible');
-            clearTimeout(hideTimeout);
-        } else {
-            playToggle.innerHTML = svgPause;
-            centerBtn.innerHTML = svgPause;
-            centerWrapper.classList.add('visible'); // Keep visible momentarily
-            startAutoHider();
-        }
-    }
+    vid.addEventListener('play', () => {
+        playToggle.innerHTML = svgPause;
+        centerBtn.innerHTML = svgPause;
+        startAutoHider();
+    });
 
-    vid.addEventListener('play', updateIcons);
-    vid.addEventListener('pause', updateIcons);
+    vid.addEventListener('pause', () => {
+        playToggle.innerHTML = svgPlay;
+        centerBtn.innerHTML = svgPlay;
+        centerWrapper.classList.add('visible');
+        ui.classList.add('visible');
+        clearTimeout(hideTimeout);
+    });
 
     centerBtn.addEventListener('click', togglePlayback);
     playToggle.addEventListener('click', togglePlayback);
@@ -283,10 +297,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 4. GESTURES ---
     container.addEventListener('click', (e) => {
         const now = Date.now();
-        const diff = now - lastTap;
-        if (diff < 400 && diff > 0) handleDoubleTap(e);
-        else {
-            // Single Tap Logic
+        if (now - lastTap < 400) {
+            handleDoubleTap(e);
+        } else {
+            // Single Tap
             if (ui.classList.contains('visible') && !vid.paused) {
                 ui.classList.remove('visible');
                 centerWrapper.classList.remove('visible');
@@ -299,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lastTap = now;
     });
 
-    // Don't let control clicks trigger container toggle
+    // Prevent propagation so controls don't trigger the container toggle
     ui.addEventListener('click', (e) => { e.stopPropagation(); startAutoHider(); });
 
     function handleDoubleTap(e) {
@@ -339,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('mute').addEventListener('click', function(){ vid.muted = !vid.muted; this.style.opacity = vid.muted ? 0.5 : 1; });
     document.getElementById('fit').addEventListener('click', function(){ this.classList.toggle('active', vid.classList.toggle('fill-mode')); });
+    
     document.getElementById('fs').addEventListener('click', () => {
         if(!document.fullscreenElement) container.requestFullscreen ? container.requestFullscreen() : vid.webkitEnterFullscreen();
         else document.exitFullscreen();
@@ -373,4 +388,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
