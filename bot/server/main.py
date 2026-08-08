@@ -3,10 +3,15 @@ from math import ceil
 from re import match as re_match
 import asyncio
 import time
+from logging import getLogger
+from hydrogram.errors import FileReferenceExpired
 from .error import abort
 from bot import TelegramBot
 from bot.config import Telegram, Server
 from bot.modules.telegram import get_message, get_file_properties
+from bot.modules.client_pool import ClientPool
+
+logger = getLogger('bot')
 
 bp = Blueprint('main', __name__)
 
@@ -27,9 +32,6 @@ async def transmit_file(file_id):
 
     start = 0
     end = file_size - 1
-    base_chunk_size = 1 * 1024 * 1024  # Start with 1MB
-    min_chunk = 256 * 1024
-    max_chunk = 8 * 1024 * 1024
 
     if range_header:
         range_match = re_match(r'bytes=(\d+)-(\d*)', range_header)
@@ -41,12 +43,15 @@ async def transmit_file(file_id):
         else:
             abort(400, 'Invalid Range header')
 
-    total_bytes_to_stream = end - start + 1
-    content_length = total_bytes_to_stream
+    content_length = end - start + 1
+    tg_chunk_size = 1 * 1024 * 1024  # Hydrogram stream_media chunk size is 1MB
+    offset = start // tg_chunk_size
+    trim_start = start % tg_chunk_size
+    limit = ceil((trim_start + content_length) / tg_chunk_size)
 
     headers = {
         'Content-Type': mime_type,
-        'Content-Disposition': f'inline; filename={file_name}',
+        'Content-Disposition': f'inline; filename="{file_name}"',
         'Content-Range': f'bytes {start}-{end}/{file_size}',
         'Accept-Ranges': 'bytes',
         'Content-Length': str(content_length),
@@ -56,47 +61,77 @@ async def transmit_file(file_id):
     status_code = 206 if range_header else 200
 
     async def smooth_stream():
-        """Smart adaptive streaming with predictive buffering."""
-        nonlocal base_chunk_size
+        """Smart adaptive streaming with predictive buffering, exact chunk trimming, and auto FileReferenceExpired recovery."""
+        nonlocal file
         bytes_sent = 0
         last_speed = None
-        smoothing_factor = 0.85  # higher = smoother response, slower adaptation
-        target_buffer_time = 0.25  # seconds of "rest" between chunks
+        smoothing_factor = 0.85
+        target_buffer_time = 0.25
 
-        async for chunk in TelegramBot.stream_media(file, offset=(start // base_chunk_size), limit=ceil(content_length / base_chunk_size)):
-            t1 = time.perf_counter()
+        client = ClientPool.get_client()
 
-            # Trim first chunk if needed
-            if bytes_sent == 0:
-                trim_start = start % base_chunk_size
-                if trim_start > 0:
-                    chunk = chunk[trim_start:]
+        # Fetch fresh message context for this worker client to ensure valid file reference
+        try:
+            target_file = await client.get_messages(Telegram.CHANNEL_ID, message_ids=file_id)
+            if not target_file or target_file.empty:
+                target_file = file
+        except Exception:
+            target_file = file
 
-            # Send chunk
-            yield chunk
-            bytes_sent += len(chunk)
+        async def fetch_and_yield(c, f, off, lim, t_start):
+            nonlocal bytes_sent, last_speed
+            async for chunk in c.stream_media(f, offset=off, limit=lim):
+                t1 = time.perf_counter()
 
-            # Measure speed
-            t2 = time.perf_counter()
-            duration = max(t2 - t1, 0.001)
-            speed = len(chunk) / duration  # bytes/sec
+                # Trim first chunk if starting offset is within a 1MB block
+                if bytes_sent == 0 and t_start > 0:
+                    chunk = chunk[t_start:]
 
-            # Smooth average
-            if last_speed:
-                speed = last_speed * smoothing_factor + speed * (1 - smoothing_factor)
-            last_speed = speed
+                # Trim last chunk if it exceeds remaining content_length
+                remaining = content_length - bytes_sent
+                if remaining <= 0:
+                    break
+                if len(chunk) > remaining:
+                    chunk = chunk[:remaining]
 
-            # Adaptive chunk size control (smooth step)
-            target_speed = 800_000  # ideal: 800 KB/s (adjust to your server)
-            ratio = min(max(speed / target_speed, 0.5), 2.0)
-            base_chunk_size = int(base_chunk_size * ratio)
-            base_chunk_size = max(min_chunk, min(max_chunk, base_chunk_size))
+                # Send chunk
+                yield chunk
+                bytes_sent += len(chunk)
 
-            # Small adaptive delay to pace stream smoothly (prevents burst stalls)
-            await asyncio.sleep(target_buffer_time / ratio)
+                # Measure speed
+                t2 = time.perf_counter()
+                duration = max(t2 - t1, 0.001)
+                speed = len(chunk) / duration  # bytes/sec
 
-            if bytes_sent >= content_length:
-                break
+                # Smooth average speed
+                if last_speed:
+                    speed = last_speed * smoothing_factor + speed * (1 - smoothing_factor)
+                last_speed = speed
+
+                # Adaptive delay to pace stream smoothly
+                target_speed = 800_000
+                ratio = min(max(speed / target_speed, 0.5), 2.0)
+
+                await asyncio.sleep(max(target_buffer_time / ratio, 0.01))
+
+                if bytes_sent >= content_length:
+                    break
+
+        try:
+            async for chunk in fetch_and_yield(client, target_file, offset, limit, trim_start):
+                yield chunk
+        except FileReferenceExpired:
+            logger.warning(f"FileReferenceExpired on file_id {file_id}. Refreshing message context...")
+            try:
+                refreshed_file = await client.get_messages(Telegram.CHANNEL_ID, message_ids=file_id)
+                curr_start = start + bytes_sent
+                curr_offset = curr_start // tg_chunk_size
+                curr_trim = curr_start % tg_chunk_size
+                curr_limit = ceil((curr_trim + (content_length - bytes_sent)) / tg_chunk_size)
+                async for chunk in fetch_and_yield(client, refreshed_file, curr_offset, curr_limit, curr_trim):
+                    yield chunk
+            except Exception as e:
+                logger.error(f"Failed to recover from FileReferenceExpired: {e}")
 
     return Response(smooth_stream(), headers=headers, status=status_code)
 
