@@ -1,12 +1,12 @@
+from hydrogram import Client
 from hydrogram.types import CallbackQuery
-from bot import TelegramBot
 from bot.modules.decorators import verify_user
 from bot.modules.static import *
 from bot.modules.telegram import get_message
 
-@TelegramBot.on_callback_query()
+@Client.on_callback_query()
 @verify_user
-async def manage_callback(bot, q: CallbackQuery):
+async def manage_callback(client: Client, q: CallbackQuery):
     query = q.data
 
     if query.startswith('rm_'):
