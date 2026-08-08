@@ -1,3 +1,23 @@
+import sys
+try:
+    import cryptg
+    class TgCryptoMock:
+        @staticmethod
+        def ige256_encrypt(data, key, iv):
+            return cryptg.encrypt_ige(data, key, iv)
+        @staticmethod
+        def ige256_decrypt(data, key, iv):
+            return cryptg.decrypt_ige(data, key, iv)
+        @staticmethod
+        def ctr256_encrypt(data, key, iv, state=None):
+            return cryptg.encrypt_ctr(data, key, iv)
+        @staticmethod
+        def ctr256_decrypt(data, key, iv, state=None):
+            return cryptg.decrypt_ctr(data, key, iv)
+    sys.modules['tgcrypto'] = TgCryptoMock
+except Exception:
+    pass
+
 from hydrogram import Client
 from logging import getLogger
 from logging.config import dictConfig
