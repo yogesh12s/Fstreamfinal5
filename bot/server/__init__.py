@@ -9,10 +9,20 @@ instance = Quart(__name__)
 instance.config['RESPONSE_TIMEOUT'] = None
 instance.config['MAX_CONTENT_LENGTH'] = 999999999999999
 
+from bot import TelegramBot
+from bot.modules.client_pool import ClientPool
+
 @instance.before_serving
 async def before_serve():
+    logger.info('Initializing Client Pool...')
+    await ClientPool.start(TelegramBot)
     logger.info('Web server is started!')
     logger.info(f'Server running on {Server.BIND_ADDRESS}:{Server.PORT}')
+
+@instance.after_serving
+async def after_serve():
+    logger.info('Stopping Client Pool...')
+    await ClientPool.stop()
 
 instance.register_blueprint(main.bp)
 
