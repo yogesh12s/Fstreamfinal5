@@ -1,12 +1,11 @@
-from hydrogram import filters
+from hydrogram import Client, filters
 from hydrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from secrets import token_hex
-from bot import TelegramBot
 from bot.config import Telegram, Server
 from bot.modules.decorators import verify_user
 from bot.modules.static import *
 
-@TelegramBot.on_message(
+@Client.on_message(
     filters.private
     & (
         filters.document
@@ -18,7 +17,7 @@ from bot.modules.static import *
     )
 )
 @verify_user
-async def handle_user_file(_, msg: Message):
+async def handle_user_file(client: Client, msg: Message):
     sender_id = msg.from_user.id
     secret_code = token_hex(Telegram.SECRET_CODE_LENGTH)
     file = await msg.copy(
