@@ -1,5 +1,7 @@
 hydrogram
 tgcrypto
+cryptg
+pycryptodome
 quart
 uvicorn
 python-dotenv
